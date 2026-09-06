@@ -25,6 +25,7 @@ shift || true
 
 case "$cmd" in
   apps)      cw_apps_cmd "$@" ;;
+  path)      cw_path_cmd "$@" ;;
   doctor)    cw_doctor_cmd "$@" ;;
   cpu)       cw_cpu_cmd "$@" ;;
   traffic)   cw_traffic_cmd "$@" ;;

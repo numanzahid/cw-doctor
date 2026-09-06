@@ -11,7 +11,7 @@ alwaysApply: false
 1. Create `lib/<name>.sh` with `cw_<name>_cmd` and `cw_<name>_help`.
 2. Load in `bin/cw`: `_cw_load_lib <name>`.
 3. Add `case` branch in `bin/cw` (diagnostic commands use `_cw_die`, not toolkit branding).
-4. Update `completions/cw.bash` if APP arg is needed.
+4. Update `completions/cw.bash` if APP arg is needed (`cw apps --completion` lists folder id + all `server_name` / alias domains).
 5. Output: `_cw_section` / `_cw_observed` only. No `cw-doctor`, no `cw traffic` hints, no install paths.
 6. Optional: fixture under `tests/fixtures/` + assertion in `tests/run-tests.sh`.
 
@@ -50,3 +50,15 @@ Tools are removed only by `uninstall.sh --purge` (entire `$CW_ROOT`), not by `cw
 
 - `bin/cw` = dispatcher only
 - Other `bin/*` = tool wrappers (exec upstream binary); not `cw` subcommands
+
+## Shell navigation
+
+`config/functions.sh` defines `cda`, `cdapp`, `cdlogs` (sourced from `config/shell.sh`).
+
+- No APP: `cw path --pick` uses `cw_apps_pick_interactive` (fzf when multiple apps)
+- With APP: same resolution as diagnostics (`cw_apps_resolve`)
+- Add targets via `cw path` flags (`--web`, `--app`, `--logs`)
+
+## fzf usage
+
+Bundled on PATH from `manifest/tools.list`. Used in one place: `cw_apps_pick_interactive` in `lib/apps.sh` (via `cw path --pick` and shell `cda`/`cdapp`/`cdlogs` without arguments). Not used in diagnostics, completions, or tmux config.

@@ -91,6 +91,17 @@ cw_apps_list() {
   done | sort
 }
 
+cw_apps_completion_tokens() {
+  local apps_dir app base
+  apps_dir="$(cw_platform_applications_dir)" || return 1
+  for app in "$apps_dir"/*/; do
+    [[ -d "$app" ]] || continue
+    base="$(basename "$app")"
+    printf '%s\n' "$base"
+    cw_apps_read_server_names "$app"
+  done | sort -u
+}
+
 cw_apps_match_id() {
   local query="$1"
   local apps_dir="$2"
@@ -167,6 +178,11 @@ cw_apps_read_disable_wp_cron() {
 }
 
 cw_apps_cmd() {
+  if [[ "${1:-}" == "--completion" ]]; then
+    cw_apps_completion_tokens
+    return 0
+  fi
+
   local apps
   mapfile -t apps < <(cw_apps_list 2>/dev/null || true)
   if [[ ${#apps[@]} -eq 0 ]]; then
@@ -192,19 +208,76 @@ cw_apps_cmd() {
 cw_apps_pick_interactive() {
   local apps
   mapfile -t apps < <(cw_apps_list)
+  if [[ ${#apps[@]} -eq 0 ]]; then
+    _cw_die "no applications found under ~/applications"
+  fi
   if [[ ${#apps[@]} -eq 1 ]]; then
     echo "${apps[0]}"
     return 0
   fi
-  if _cw_is_tty && [[ -x "${CW_BIN_DIR}/fzf" ]]; then
-    local apps_dir line id url type
+  if _cw_is_tty && command -v fzf >/dev/null 2>&1; then
+    local apps_dir id url type
     apps_dir="$(cw_platform_applications_dir)"
     while IFS= read -r id; do
       url="$(cw_apps_primary_url "${apps_dir}/${id}")"
       type="$(cw_apps_stack_type "${apps_dir}/${id}")"
-      printf '%s  %s  %s\n' "$id" "$type" "$url"
-    done <<< "$(printf '%s\n' "${apps[@]}")" | "${CW_BIN_DIR}/fzf" | awk '{print $1}'
+      printf '%-36s %-10s %s\n' "$url" "$type" "$id"
+    done <<< "$(printf '%s\n' "${apps[@]}")" | fzf --height=40% --reverse | awk '{print $NF}'
   else
-    _cw_die "multiple apps; specify APP explicitly"
+    _cw_die "multiple apps; specify APP (domain or folder id)"
   fi
+}
+
+cw_path_cmd() {
+  local pick=0 target="web" query=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --pick) pick=1; shift ;;
+      --app|--root) target="app"; shift ;;
+      --web|--public) target="web"; shift ;;
+      --logs) target="logs"; shift ;;
+      -h|--help) cw_path_help; return 0 ;;
+      --) shift; break ;;
+      -*)
+        _cw_die "unknown option: $1"
+        ;;
+      *)
+        if [[ -n "$query" ]]; then
+          _cw_die "unexpected argument: $1"
+        fi
+        query="$1"
+        shift
+        ;;
+    esac
+  done
+
+  if [[ $pick -eq 1 ]]; then
+    query="$(cw_apps_pick_interactive)"
+  elif [[ -z "$query" ]]; then
+    _cw_die "APP required (domain, folder id, or --pick)"
+  fi
+
+  local app_dir
+  app_dir="$(cw_apps_resolve "$query")"
+  case "$target" in
+    app) printf '%s\n' "$app_dir" ;;
+    web) printf '%s\n' "$(cw_apps_public_html "$app_dir")" ;;
+    logs) printf '%s\n' "$(cw_apps_logs_dir "$app_dir")" ;;
+  esac
+}
+
+cw_path_help() {
+  cat <<'EOF'
+Usage: cw path APP [--app|--web|--logs]
+       cw path --pick [--app|--web|--logs]
+
+Print an application directory path. APP is a folder id or domain (same as cw traffic).
+
+  --web     public_html (default)
+  --app     application root (~/applications/<id>)
+  --logs    logs directory
+  --pick    interactive chooser (fzf when multiple apps)
+
+Shell helpers (after install): cda, cdapp, cdlogs
+EOF
 }

@@ -20,6 +20,28 @@ Reinstall or repair: `~/.local/opt/cw-doctor/install.sh`
 
 Updates: `cw update` (`git pull --ff-only` + refresh bundled tools).
 
+## App navigation
+
+Cloudways app folders use opaque ids (`~/applications/kuwzfqjbxq`). Jump by **domain** instead:
+
+| Command | Goes to |
+|---------|---------|
+| `cda` | `public_html` (fzf picker if no APP) |
+| `cda example.com` | `public_html` for that app |
+| `cdapp example.com` | app root (`~/applications/<id>`) |
+| `cdlogs example.com` | `logs/` |
+
+APP can be primary domain, any alias (`www.example.com`), or the folder id. No `https://` prefix.
+
+With multiple apps and no APP argument, **fzf** opens a searchable list labeled by domain.
+
+```bash
+cda                      # fzf: pick by domain
+cda staging.client.com   # jump directly
+cw path example.com      # print path (for scripts)
+cd "$(cw path example.com --logs)"
+```
+
 Bundled tools (`rg`, `fd`, `fzf`, `bat`, `btop`, `gdu`, `tmux`, `nvim`, `lazygit`) are on PATH after shell integration. Diagnostics use the `cw` command only.
 
 ## Commands
@@ -27,6 +49,7 @@ Bundled tools (`rg`, `fd`, `fzf`, `bat`, `btop`, `gdu`, `tmux`, `nvim`, `lazygit
 | Command | Description |
 |---------|-------------|
 | `cw apps` | List applications on this server |
+| `cw path APP` | Print app path (`--pick` for fzf chooser) |
 | `cw doctor [APP]` | Server and app health snapshot |
 | `cw cpu [APP]` | CPU, RAM, processes |
 | `cw traffic APP` | Access log traffic analysis |

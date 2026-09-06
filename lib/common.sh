@@ -139,7 +139,10 @@ cw-doctor toolkit
 Admin (install, paths, updates):
   cw status            Install health and paths
   cw update            Manual update
+  cw path APP          Print app path (or cw path --pick)
   cw uninstall         Reverse install (or uninstall.sh)
+
+Shell navigation (after install): cda, cdapp, cdlogs
 
 Server diagnostics (shareable output; no toolkit branding in reports):
   cw apps              List applications

@@ -25,6 +25,25 @@ assert_contains "$fp" "combined" "access fingerprint"
 fp2="$(cw_logs_fingerprint_php_access "${ROOT}/tests/fixtures/php-app-access.log")"
 assert_contains "$fp2" "php-fpm-cpu" "php-app fingerprint"
 
+_cw_load_lib apps
+_cw_load_lib platform
+TMP_HOME="$(mktemp -d)"
+APP_DIR="${TMP_HOME}/applications/testapp123456"
+mkdir -p "${APP_DIR}/conf" "${APP_DIR}/public_html" "${APP_DIR}/logs"
+printf 'server_name example.com www.example.com;\n' > "${APP_DIR}/conf/server.nginx"
+export HOME="$TMP_HOME"
+path_web="$(cw_path_cmd example.com)"
+path_logs="$(cw_path_cmd www.example.com --logs)"
+if [[ "$path_web" == "${APP_DIR}/public_html" && "$path_logs" == "${APP_DIR}/logs" ]]; then
+  echo "PASS: cw path resolves domain"
+else
+  echo "FAIL: cw path resolves domain (web=$path_web logs=$path_logs)" >&2
+  fail=1
+fi
+rm -rf "$TMP_HOME"
+unset HOME
+export CW_ROOT="$ROOT"
+
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck "${ROOT}"/lib/*.sh "${ROOT}"/bin/cw "${ROOT}"/install.sh "${ROOT}"/uninstall.sh && echo "PASS: shellcheck" || fail=1
 else

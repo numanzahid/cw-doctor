@@ -1,4 +1,8 @@
 # bash completion for cw
+_cw_app_tokens() {
+  cw apps --completion 2>/dev/null
+}
+
 _cw_complete() {
   local cur prev words cword
   _init_completion || return
@@ -11,10 +15,10 @@ _cw_complete() {
     2)
       case "$prev" in
         traffic|slow|watch|errors|cron)
-          mapfile -t COMPREPLY < <(compgen -W "$(cw apps 2>/dev/null | awk 'NR>1 && $1 !~ /^==/ {print $1}')" -- "$cur")
+          mapfile -t COMPREPLY < <(compgen -W "$(_cw_app_tokens)" -- "$cur")
           ;;
         doctor|cpu|disk|collect)
-          mapfile -t COMPREPLY < <(compgen -W "$(cw apps 2>/dev/null | awk 'NR>1 && $1 !~ /^==/ {print $1}')" -- "$cur")
+          mapfile -t COMPREPLY < <(compgen -W "$(_cw_app_tokens)" -- "$cur")
           compopt -o default
           ;;
       esac

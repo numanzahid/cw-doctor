@@ -1,31 +1,35 @@
 # Shell jump helpers for Cloudways app folders (domain or folder id; fzf when APP omitted)
 
-cda() {
+_cda_go() {
   local dest
-  if [[ $# -eq 0 ]]; then
-    dest="$(cw path --pick)" || return 1
-  else
-    dest="$(cw path "$1")" || return 1
+  dest="$(cw path "$@")" || return 1
+  if [[ -z "$dest" || ! -d "$dest" ]]; then
+    echo "error: no app path resolved" >&2
+    return 1
   fi
   cd "$dest" || return 1
+}
+
+cda() {
+  if [[ $# -eq 0 ]]; then
+    _cda_go --pick
+  else
+    _cda_go "$1"
+  fi
 }
 
 cdapp() {
-  local dest
   if [[ $# -eq 0 ]]; then
-    dest="$(cw path --pick --app)" || return 1
+    _cda_go --pick --app
   else
-    dest="$(cw path "$1" --app)" || return 1
+    _cda_go "$1" --app
   fi
-  cd "$dest" || return 1
 }
 
 cdlogs() {
-  local dest
   if [[ $# -eq 0 ]]; then
-    dest="$(cw path --pick --logs)" || return 1
+    _cda_go --pick --logs
   else
-    dest="$(cw path "$1" --logs)" || return 1
+    _cda_go "$1" --logs
   fi
-  cd "$dest" || return 1
 }

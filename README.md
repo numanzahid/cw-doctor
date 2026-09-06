@@ -8,7 +8,7 @@ Read-only SSH diagnostic toolkit for Cloudways WordPress servers.
 git clone <repo-url> cw-doctor
 cd cw-doctor
 ./install.sh          # moves repo to ~/.local/opt/cw-doctor (includes .git)
-source ~/.bash_aliases
+source ~/.bash_aliases   # loads cw, cda, tab completion
 cw apps
 cw cpu
 cw traffic <APP>

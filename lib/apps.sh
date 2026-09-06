@@ -122,17 +122,64 @@ cw_apps_match_id() {
 cw_apps_resolve() {
   local query="$1"
   local apps_dir base resolved
+  query="${query#"${query%%[![:space:]]*}"}"
+  query="${query%"${query##*[![:space:]]}"}"
   apps_dir="$(cw_platform_applications_dir)" || _cw_die "applications directory not found"
   if [[ -z "$query" ]]; then
     _cw_die "APP required"
   fi
   base="${apps_dir}/${query}"
   if [[ -d "$base" ]]; then
-    printf '%s' "$base"
+    if [[ "${base%/}" == "${apps_dir%/}" ]]; then
+      _cw_die "unknown app: $query"
+    fi
+    printf '%s' "${base%/}"
     return 0
   fi
   resolved="$(cw_apps_match_id "$query" "$apps_dir")" || _cw_die "unknown app: $query"
   printf '%s' "${apps_dir}/${resolved}"
+}
+
+cw_apps_fzf_binary() {
+  if [[ -x "${CW_BIN_DIR}/fzf" ]]; then
+    printf '%s' "${CW_BIN_DIR}/fzf"
+    return 0
+  fi
+  if command -v fzf >/dev/null 2>&1; then
+    command -v fzf
+    return 0
+  fi
+  return 1
+}
+
+cw_apps_pick_select() {
+  local apps_dir="$1"
+  shift
+  local apps=("$@")
+  local i=1 choice id url n
+  for id in "${apps[@]}"; do
+    url="$(cw_apps_primary_url "${apps_dir}/${id}")"
+    printf '  %2d) %-36s %s\n' "$i" "$url" "$id" >&2
+    i=$((i + 1))
+  done
+  printf 'Number, domain, or folder id: ' >&2
+  if [[ -r /dev/tty ]]; then
+    read -r choice </dev/tty
+  else
+    read -r choice
+  fi
+  [[ -n "$choice" ]] || _cw_die "no app selected"
+  if [[ "$choice" =~ ^[0-9]+$ ]]; then
+    n=$((choice))
+    if [[ "$n" -ge 1 && "$n" -le ${#apps[@]} ]]; then
+      printf '%s' "${apps[$((n - 1))]}"
+      return 0
+    fi
+    _cw_die "invalid selection: $choice"
+  fi
+  local matched
+  matched="$(cw_apps_match_id "$choice" "$apps_dir")" || _cw_die "unknown app: $choice"
+  printf '%s' "$matched"
 }
 
 cw_apps_is_wordpress() {
@@ -215,17 +262,30 @@ cw_apps_pick_interactive() {
     echo "${apps[0]}"
     return 0
   fi
-  if _cw_is_tty && command -v fzf >/dev/null 2>&1; then
-    local apps_dir id url type
-    apps_dir="$(cw_platform_applications_dir)"
-    while IFS= read -r id; do
+  if ! _cw_is_interactive; then
+    _cw_die "multiple apps; specify APP (domain or folder id)"
+  fi
+
+  local apps_dir id url type picked fzf_bin
+  apps_dir="$(cw_platform_applications_dir)"
+  if fzf_bin="$(cw_apps_fzf_binary)"; then
+    picked="$(while IFS= read -r id; do
       url="$(cw_apps_primary_url "${apps_dir}/${id}")"
       type="$(cw_apps_stack_type "${apps_dir}/${id}")"
       printf '%-36s %-10s %s\n' "$url" "$type" "$id"
-    done <<< "$(printf '%s\n' "${apps[@]}")" | fzf --height=40% --reverse | awk '{print $NF}'
+    done <<< "$(printf '%s\n' "${apps[@]}")" | {
+      if [[ -t 1 ]]; then
+        "$fzf_bin" --height=40% --reverse
+      else
+        "$fzf_bin" --height=40% --reverse 0</dev/tty
+      fi
+    } | awk '{print $NF}')"
   else
-    _cw_die "multiple apps; specify APP (domain or folder id)"
+    picked="$(cw_apps_pick_select "$apps_dir" "${apps[@]}")"
   fi
+
+  [[ -n "$picked" ]] || _cw_die "no app selected"
+  printf '%s' "$picked"
 }
 
 cw_path_cmd() {
@@ -252,18 +312,22 @@ cw_path_cmd() {
   done
 
   if [[ $pick -eq 1 ]]; then
-    query="$(cw_apps_pick_interactive)"
+    query="$(cw_apps_pick_interactive)" || _cw_die "app selection failed"
+    [[ -n "$query" ]] || _cw_die "no app selected"
   elif [[ -z "$query" ]]; then
     _cw_die "APP required (domain, folder id, or --pick)"
   fi
 
-  local app_dir
-  app_dir="$(cw_apps_resolve "$query")"
+  local app_dir out apps_dir
+  apps_dir="$(cw_platform_applications_dir)" || _cw_die "applications directory not found"
+  app_dir="$(cw_apps_resolve "$query")" || _cw_die "unknown app: $query"
   case "$target" in
-    app) printf '%s\n' "$app_dir" ;;
-    web) printf '%s\n' "$(cw_apps_public_html "$app_dir")" ;;
-    logs) printf '%s\n' "$(cw_apps_logs_dir "$app_dir")" ;;
+    app) out="$app_dir" ;;
+    web) out="$(cw_apps_public_html "$app_dir")" ;;
+    logs) out="$(cw_apps_logs_dir "$app_dir")" ;;
   esac
+  [[ -d "$out" ]] || _cw_die "path not found: $out"
+  printf '%s\n' "$out"
 }
 
 cw_path_help() {

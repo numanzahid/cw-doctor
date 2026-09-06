@@ -88,6 +88,16 @@ _cw_is_tty() {
   [[ -t 0 && -t 1 ]]
 }
 
+_cw_is_interactive() {
+  [[ -t 0 ]]
+}
+
+_cw_user_tty() {
+  if [[ -r /dev/tty ]]; then
+    printf '%s' /dev/tty
+  fi
+}
+
 _cw_redact_line() {
   sed -E \
     -e 's/(password|passwd|secret|token|api[_-]?key|authorization|nonce|cookie)=[^&[:space:]]+/REDACTED/gi' \

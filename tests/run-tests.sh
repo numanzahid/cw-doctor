@@ -40,6 +40,14 @@ else
   echo "FAIL: cw path resolves domain (web=$path_web logs=$path_logs)" >&2
   fail=1
 fi
+rc=0
+cw_path_cmd >/dev/null 2>&1 || rc=$?
+if [[ "$rc" -eq 0 ]]; then
+  echo "FAIL: cw path should reject empty APP" >&2
+  fail=1
+else
+  echo "PASS: cw path rejects empty APP"
+fi
 rm -rf "$TMP_HOME"
 unset HOME
 export CW_ROOT="$ROOT"

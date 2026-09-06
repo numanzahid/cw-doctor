@@ -2,6 +2,9 @@
 
 cw_collect_cmd() {
   local app="${1:-}"
+  if [[ -z "$app" ]] && _cw_is_interactive; then
+    app="$(cw_apps_pick_with_scope)"
+  fi
   local ts report_id out
   ts="$(_cw_now_ts)"
   report_id="$ts"

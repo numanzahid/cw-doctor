@@ -140,82 +140,6 @@ cw_apps_resolve() {
   printf '%s' "${apps_dir}/${resolved}"
 }
 
-cw_apps_fzf_binary() {
-  if [[ -x "${CW_BIN_DIR}/fzf" ]]; then
-    printf '%s' "${CW_BIN_DIR}/fzf"
-    return 0
-  fi
-  if command -v fzf >/dev/null 2>&1; then
-    command -v fzf
-    return 0
-  fi
-  return 1
-}
-
-cw_apps_pick_lines() {
-  local apps_dir="$1"
-  shift
-  local apps=("$@") id url type
-  for id in "${apps[@]}"; do
-    url="$(cw_apps_primary_url "${apps_dir}/${id}")"
-    type="$(cw_apps_stack_type "${apps_dir}/${id}")"
-    printf '%-36s %-10s %s\n' "$url" "$type" "$id"
-  done
-}
-
-cw_apps_run_fzf() {
-  local fzf_bin="$1"
-  # Keep app lines on stdin (pipe). UI goes to /dev/tty when stdout is captured.
-  # Do NOT use 0</dev/tty; that drops the piped list and fzf walks the cwd.
-  if [[ -t 1 ]]; then
-    FZF_DEFAULT_COMMAND= FZF_CTRL_T_COMMAND= "$fzf_bin" \
-      --height=40% --reverse --prompt='cw app> ' --header='Select application' --no-multi
-  else
-    FZF_DEFAULT_COMMAND= FZF_CTRL_T_COMMAND= "$fzf_bin" \
-      --height=40% --reverse --prompt='cw app> ' --header='Select application' --no-multi 2>/dev/tty
-  fi
-}
-
-cw_apps_validate_picked_id() {
-  local picked="$1"
-  shift
-  local apps=("$@") id
-  for id in "${apps[@]}"; do
-    [[ "$id" == "$picked" ]] && return 0
-  done
-  return 1
-}
-
-cw_apps_pick_select() {
-  local apps_dir="$1"
-  shift
-  local apps=("$@")
-  local i=1 choice id url n
-  for id in "${apps[@]}"; do
-    url="$(cw_apps_primary_url "${apps_dir}/${id}")"
-    printf '  %2d) %-36s %s\n' "$i" "$url" "$id" >&2
-    i=$((i + 1))
-  done
-  printf 'Number, domain, or folder id: ' >&2
-  if [[ -r /dev/tty ]]; then
-    read -r choice </dev/tty
-  else
-    read -r choice
-  fi
-  [[ -n "$choice" ]] || _cw_die "no app selected"
-  if [[ "$choice" =~ ^[0-9]+$ ]]; then
-    n=$((choice))
-    if [[ "$n" -ge 1 && "$n" -le ${#apps[@]} ]]; then
-      printf '%s' "${apps[$((n - 1))]}"
-      return 0
-    fi
-    _cw_die "invalid selection: $choice"
-  fi
-  local matched
-  matched="$(cw_apps_match_id "$choice" "$apps_dir")" || _cw_die "unknown app: $choice"
-  printf '%s' "$matched"
-}
-
 cw_apps_is_wordpress() {
   local app_dir="$1"
   [[ -f "${app_dir}/public_html/wp-config.php" ]] || \
@@ -263,6 +187,10 @@ cw_apps_cmd() {
     cw_apps_completion_tokens
     return 0
   fi
+  if [[ "${1:-}" == "-i" || "${1:-}" == "--interactive" ]]; then
+    cw_apps_interactive_cmd
+    return 0
+  fi
 
   local apps
   mapfile -t apps < <(cw_apps_list 2>/dev/null || true)
@@ -286,31 +214,23 @@ cw_apps_cmd() {
   done
 }
 
-cw_apps_pick_interactive() {
-  local apps
-  mapfile -t apps < <(cw_apps_list)
-  if [[ ${#apps[@]} -eq 0 ]]; then
-    _cw_die "no applications found under ~/applications"
+cw_apps_interactive_cmd() {
+  local app base pub type url path aliases
+  app="$(cw_apps_pick_interactive)"
+  base="$(cw_apps_resolve "$app")"
+  pub="$(cw_apps_public_html "$base")"
+  type="$(cw_apps_stack_type "$base")"
+  url="$(cw_apps_primary_url "$base")"
+  path="$(cw_apps_short_path "$pub")"
+  _cw_section "Application"
+  _cw_label "id" "$app"
+  _cw_label "type" "$type"
+  _cw_label "primary url" "$url"
+  _cw_label "path" "$path"
+  aliases="$(cw_apps_all_urls "$base")"
+  if [[ -n "$aliases" && "$aliases" != "$url" ]]; then
+    _cw_label "aliases" "$aliases"
   fi
-  if [[ ${#apps[@]} -eq 1 ]]; then
-    echo "${apps[0]}"
-    return 0
-  fi
-  if ! _cw_is_interactive; then
-    _cw_die "multiple apps; specify APP (domain or folder id)"
-  fi
-
-  local apps_dir picked fzf_bin
-  apps_dir="$(cw_platform_applications_dir)"
-  if fzf_bin="$(cw_apps_fzf_binary)"; then
-    picked="$(cw_apps_pick_lines "$apps_dir" "${apps[@]}" | cw_apps_run_fzf "$fzf_bin" | awk '{print $NF}')"
-  else
-    picked="$(cw_apps_pick_select "$apps_dir" "${apps[@]}")"
-  fi
-
-  [[ -n "$picked" ]] || _cw_die "no app selected"
-  cw_apps_validate_picked_id "$picked" "${apps[@]}" || _cw_die "invalid app selection: $picked"
-  printf '%s' "$picked"
 }
 
 cw_path_cmd() {
@@ -340,7 +260,7 @@ cw_path_cmd() {
     query="$(cw_apps_pick_interactive)" || _cw_die "app selection failed"
     [[ -n "$query" ]] || _cw_die "no app selected"
   elif [[ -z "$query" ]]; then
-    _cw_die "APP required (domain, folder id, or --pick)"
+    query="$(cw_apps_pick_interactive)" || _cw_die "app selection failed"
   fi
 
   local app_dir out apps_dir
@@ -357,15 +277,15 @@ cw_path_cmd() {
 
 cw_path_help() {
   cat <<'EOF'
-Usage: cw path APP [--app|--web|--logs]
+Usage: cw path [APP] [--app|--web|--logs]
        cw path --pick [--app|--web|--logs]
 
-Print an application directory path. APP is a folder id or domain (same as cw traffic).
+Print an application directory path. APP is a folder id or domain (omit APP to pick).
 
   --web     public_html (default)
   --app     application root (~/applications/<id>)
   --logs    logs directory
-  --pick    interactive chooser (fzf when multiple apps)
+  --pick    interactive chooser (same as omitting APP)
 
 Shell helpers (after install): cda, cdapp, cdlogs
 EOF

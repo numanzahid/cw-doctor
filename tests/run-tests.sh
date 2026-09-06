@@ -27,6 +27,7 @@ assert_contains "$fp2" "php-fpm-cpu" "php-app fingerprint"
 
 _cw_load_lib apps
 _cw_load_lib platform
+_cw_load_lib pick
 TMP_HOME="$(mktemp -d)"
 APP_DIR="${TMP_HOME}/applications/testapp123456"
 mkdir -p "${APP_DIR}/conf" "${APP_DIR}/public_html" "${APP_DIR}/logs"
@@ -39,14 +40,6 @@ if [[ "$path_web" == "${APP_DIR}/public_html" && "$path_logs" == "${APP_DIR}/log
 else
   echo "FAIL: cw path resolves domain (web=$path_web logs=$path_logs)" >&2
   fail=1
-fi
-rc=0
-( cw_path_cmd ) >/dev/null 2>&1 || rc=$?
-if [[ "$rc" -eq 0 ]]; then
-  echo "FAIL: cw path should reject empty APP" >&2
-  fail=1
-else
-  echo "PASS: cw path rejects empty APP"
 fi
 rm -rf "$TMP_HOME"
 unset HOME

@@ -8,6 +8,7 @@ _cw_load_lib platform
 _cw_load_lib state
 _cw_load_lib tools
 _cw_load_lib apps
+_cw_load_lib pick
 _cw_load_lib logs
 _cw_load_lib doctor
 _cw_load_lib cpu
@@ -20,10 +21,15 @@ _cw_load_lib disk
 _cw_load_lib collect
 _cw_load_lib update
 
-cmd="${1:-help}"
+cmd="${1:-}"
+if [[ -z "$cmd" ]]; then
+  cw_menu_cmd
+  exit 0
+fi
 shift || true
 
 case "$cmd" in
+  menu)      cw_menu_cmd "$@" ;;
   apps)      cw_apps_cmd "$@" ;;
   path)      cw_path_cmd "$@" ;;
   doctor)    cw_doctor_cmd "$@" ;;
@@ -31,6 +37,10 @@ case "$cmd" in
   traffic)   cw_traffic_cmd "$@" ;;
   slow)      cw_slow_cmd "$@" ;;
   watch)     cw_watch_cmd "$@" ;;
+  logs)      cw_logs_cmd "$@" ;;
+  reports)   cw_reports_cmd "$@" ;;
+  go)        cw_go_cmd "$@" ;;
+  wp)        cw_wp_cmd "$@" ;;
   errors)    cw_errors_cmd "$@" ;;
   cron)      cw_cron_cmd "$@" ;;
   disk)      cw_disk_cmd "$@" ;;

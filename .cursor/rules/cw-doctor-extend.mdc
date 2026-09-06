@@ -53,12 +53,17 @@ Tools are removed only by `uninstall.sh --purge` (entire `$CW_ROOT`), not by `cw
 
 ## Shell navigation
 
-`config/functions.sh` defines `cda`, `cdapp`, `cdlogs` (sourced from `config/shell.sh`).
+`config/functions.sh` defines `cda`, `cdapp`, `cdlogs`, `cgo`, `fcd`, `fnvim`, `fbat` (sourced from `config/shell.sh`).
 
-- No APP: `cw path --pick` uses `cw_apps_pick_interactive` (fzf when multiple apps)
-- With APP: same resolution as diagnostics (`cw_apps_resolve`)
-- Add targets via `cw path` flags (`--web`, `--app`, `--logs`)
+`config/shell.sh` runs `fzf --bash` for Ctrl+R fuzzy history (and other fzf keybindings).
+
+## Interactive fzf menu
+
+- Bare `cw` or `cw menu` -> `cw_menu_cmd` in `lib/pick.sh`
+- All pickers live in `lib/pick.sh` (`cw_pick_*`, `cw_apps_pick_*`, `cw_apps_require_app`)
+- Commands with optional APP call `cw_apps_require_app` or `cw_apps_pick_with_scope`
+- New commands: `logs`, `reports`, `go`, `wp`
 
 ## fzf usage
 
-Bundled on PATH from `manifest/tools.list`. Used in `cw_apps_pick_interactive` for `cw path --pick` and bare `cda`/`cdapp`/`cdlogs`. App lines are piped to fzf on stdin; use `2>/dev/tty` (not `0</dev/tty`) when stdout is captured so fzf does not walk the cwd. Falls back to a numbered prompt if fzf is unavailable.
+Bundled on PATH. Used for app/command/log/report/path pickers. Pipe data on stdin; use `2>/dev/tty` when stdout is captured. Never `0</dev/tty` on stdin (drops piped list).

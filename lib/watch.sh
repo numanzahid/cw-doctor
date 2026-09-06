@@ -20,8 +20,11 @@ _cw_watch_tail() {
 }
 
 cw_watch_cmd() {
-  local app="$1" mode="${2:-all}"
-  [[ -n "$app" ]] || _cw_die "APP required"
+  local app="$1" mode="${2:-}"
+  app="$(cw_apps_require_app "$app")"
+  if [[ -z "$mode" ]]; then
+    mode="$(cw_pick_watch_mode)"
+  fi
   local base logs_dir pub
   base="$(cw_apps_resolve "$app")"
   logs_dir="$(cw_apps_logs_dir "$base")"
@@ -70,6 +73,6 @@ cw_watch_cmd() {
 }
 
 cw_watch_help() {
-  echo "Usage: cw watch APP [errors|php|access|slow|all]"
-  echo "Live log tail (tail -F -n 0). Cleans up child processes on exit."
+  echo "Usage: cw watch [APP] [errors|php|access|slow|all]"
+  echo "Live log tail (tail -F -n 0). Omit APP or mode to pick interactively."
 }

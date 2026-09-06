@@ -2,6 +2,9 @@
 
 cw_doctor_cmd() {
   local app="${1:-}"
+  if [[ -z "$app" ]] && _cw_is_interactive; then
+    app="$(cw_apps_pick_with_scope)"
+  fi
   _cw_section "Server"
   _cw_label "hostname" "$(cw_platform_hostname)"
   _cw_label "os" "$(cw_platform_os)"

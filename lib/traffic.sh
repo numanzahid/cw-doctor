@@ -7,7 +7,7 @@ _cw_traffic_crawler_file() {
 
 cw_traffic_cmd() {
   local app="$1"
-  [[ -n "$app" ]] || _cw_die "APP required"
+  app="$(cw_apps_require_app "$app")"
   local base logs_dir access
   base="$(cw_apps_resolve "$app")"
   logs_dir="$(cw_apps_logs_dir "$base")"

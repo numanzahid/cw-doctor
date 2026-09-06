@@ -42,23 +42,53 @@ cw path example.com      # print path (for scripts)
 cd "$(cw path example.com --logs)"
 ```
 
-Bundled tools (`rg`, `fd`, `fzf`, `bat`, `btop`, `gdu`, `tmux`, `nvim`, `lazygit`) are on PATH after shell integration. Diagnostics use the `cw` command only.
+## Interactive menu (fzf)
+
+Type `cw` with no arguments to open the command launcher:
+
+```bash
+cw          # pick command -> pick app/options -> run
+cw menu     # same
+cw traffic  # pick app if omitted, then run
+cw watch    # pick app, pick mode, then tail
+cw logs     # pick app, pick log file, view with bat
+cw reports --open   # pick past report, view summary
+```
+
+Omit APP on most commands to get an fzf picker (domain-labeled). For `doctor`, `cpu`, `disk`, and `collect`, you can also choose **Server-wide**.
+
+| Shell helper | Action |
+|--------------|--------|
+| `cda` | cd to public_html |
+| `cdapp` | cd to app root |
+| `cdlogs` | cd to logs |
+| `cgo` | cd to path from `cw go` |
+| `fcd [DIR]` | fzf pick a subfolder under DIR (default `.`) and cd |
+| `fnvim [DIR]` | fzf pick a file under DIR (default `.`) and open in nvim |
+| `fbat [DIR]` | fzf pick a file (bat preview in picker), then view with bat |
+
+**Ctrl+R** uses fzf fuzzy history search (via `fzf --bash` in shell integration).
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `cw apps` | List applications on this server |
-| `cw path APP` | Print app path (`--pick` for fzf chooser) |
+| `cw` / `cw menu` | Interactive fzf command launcher |
+| `cw apps [-i]` | List apps (`-i` pick one for detail) |
+| `cw path [APP]` | Print app path (pick if omitted) |
 | `cw doctor [APP]` | Server and app health snapshot |
 | `cw cpu [APP]` | CPU, RAM, processes |
-| `cw traffic APP` | Access log traffic analysis |
-| `cw slow APP` | PHP slow log analysis |
-| `cw watch APP [mode]` | Live log tail (access, php, errors, slow) |
-| `cw errors APP` | Error log summary |
-| `cw cron APP` | WP cron and admin-ajax activity |
+| `cw traffic [APP]` | Access log traffic analysis |
+| `cw slow [APP]` | PHP slow log analysis |
+| `cw watch [APP] [mode]` | Live log tail |
+| `cw logs [APP]` | Browse/view log files |
+| `cw errors [APP]` | Error log summary |
+| `cw cron [APP]` | WP cron and admin-ajax activity |
 | `cw disk [APP]` | Disk and inode usage |
 | `cw collect [APP]` | Write sanitized report bundle |
+| `cw reports [--open]` | Browse past collect reports |
+| `cw go [APP]` | Pick path within an app |
+| `cw wp [APP]` | Pick plugin or theme directory |
 | `cw status` | Install health check |
 | `cw update` | Manual update (git pull + refresh tools) |
 | `cw uninstall` | Reverse install changes |

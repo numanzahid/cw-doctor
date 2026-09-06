@@ -146,25 +146,34 @@ _cw_help_global() {
   cat <<'EOF'
 cw-doctor toolkit
 
+Interactive menu (fzf):
+  cw                   Command launcher (pick command, app, options)
+  cw menu              Same as bare cw
+
 Admin (install, paths, updates):
   cw status            Install health and paths
   cw update            Manual update
-  cw path APP          Print app path (or cw path --pick)
+  cw path [APP]        Print app path (pick if APP omitted)
   cw uninstall         Reverse install (or uninstall.sh)
 
-Shell navigation (after install): cda, cdapp, cdlogs
+Shell navigation (after install): cda, cdapp, cdlogs, cgo, fcd, fnvim, fbat
+  Ctrl+R               fzf fuzzy shell history
 
-Server diagnostics (shareable output; no toolkit branding in reports):
-  cw apps              List applications
+Server diagnostics (shareable output; omit APP to pick interactively):
+  cw apps [-i]         List applications (-i = pick one, show detail)
   cw doctor [APP]      Server and app health
   cw cpu [APP]         CPU, RAM, processes
-  cw traffic APP       Access log analysis
-  cw slow APP          PHP slow log analysis
-  cw watch APP [mode]  Live log tail
-  cw errors APP        Error log summary
-  cw cron APP          WP cron activity
+  cw traffic [APP]     Access log analysis
+  cw slow [APP]        PHP slow log analysis
+  cw watch [APP] [mode] Live log tail
+  cw logs [APP]        Browse log files (bat/tail)
+  cw errors [APP]      Error log summary
+  cw cron [APP]        WP cron activity
   cw disk [APP]        Disk usage
   cw collect [APP]     Sanitized report bundle
+  cw reports [--open]  Browse past reports
+  cw go [APP]          Path picker within an app
+  cw wp [APP]          Plugin/theme picker
 
   cw help              This help
 EOF

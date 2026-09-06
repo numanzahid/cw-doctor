@@ -1,17 +1,26 @@
 # Shell integration for cw diagnostics
-export PATH="${HOME}/.local/opt/cw-doctor/bin:${PATH}"
+_CW_SHELL_ROOT="${HOME}/.local/opt/cw-doctor"
+export PATH="${_CW_SHELL_ROOT}/bin:${PATH}"
 
-if [[ -f "${HOME}/.local/opt/cw-doctor/config/aliases.sh" ]]; then
-  # shellcheck source=/dev/null
-  source "${HOME}/.local/opt/cw-doctor/config/aliases.sh"
+if [[ -x "${_CW_SHELL_ROOT}/bin/fzf" ]]; then
+  # shellcheck disable=SC2016
+  eval "$("${_CW_SHELL_ROOT}/bin/fzf" --bash)"
+elif command -v fzf >/dev/null 2>&1; then
+  # shellcheck disable=SC2016
+  eval "$(fzf --bash)"
 fi
 
-if [[ -f "${HOME}/.local/opt/cw-doctor/config/functions.sh" ]]; then
+if [[ -f "${_CW_SHELL_ROOT}/config/aliases.sh" ]]; then
   # shellcheck source=/dev/null
-  source "${HOME}/.local/opt/cw-doctor/config/functions.sh"
+  source "${_CW_SHELL_ROOT}/config/aliases.sh"
 fi
 
-if [[ -f "${HOME}/.local/opt/cw-doctor/completions/cw.bash" ]]; then
+if [[ -f "${_CW_SHELL_ROOT}/config/functions.sh" ]]; then
   # shellcheck source=/dev/null
-  source "${HOME}/.local/opt/cw-doctor/completions/cw.bash"
+  source "${_CW_SHELL_ROOT}/config/functions.sh"
+fi
+
+if [[ -f "${_CW_SHELL_ROOT}/completions/cw.bash" ]]; then
+  # shellcheck source=/dev/null
+  source "${_CW_SHELL_ROOT}/completions/cw.bash"
 fi

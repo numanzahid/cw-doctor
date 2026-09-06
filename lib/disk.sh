@@ -2,6 +2,9 @@
 
 cw_disk_cmd() {
   local app="${1:-}"
+  if [[ -z "$app" ]] && _cw_is_interactive; then
+    app="$(cw_apps_pick_with_scope)"
+  fi
 
   _cw_section "Filesystem"
   _cw_label "disk /" "$(cw_platform_disk_root)"

@@ -7,14 +7,18 @@ Read-only SSH diagnostic toolkit for Cloudways WordPress servers.
 ```bash
 git clone <repo-url> cw-doctor
 cd cw-doctor
-./install.sh
-source ~/.bash_aliases   # or open a new shell
+./install.sh          # moves repo to ~/.local/opt/cw-doctor (includes .git)
+source ~/.bash_aliases
 cw apps
 cw cpu
 cw traffic <APP>
 ```
 
-Install location: `~/.local/opt/cw-doctor`
+Install location: `~/.local/opt/cw-doctor` (clone directory is removed; no leftover in `$HOME`).
+
+Reinstall or repair: `~/.local/opt/cw-doctor/install.sh`
+
+Updates: `cw update` (`git pull --ff-only` + refresh bundled tools).
 
 Bundled tools (`rg`, `fd`, `fzf`, `bat`, `btop`, `gdu`, `tmux`, `nvim`, `lazygit`) are on PATH after shell integration. Diagnostics use the `cw` command only.
 

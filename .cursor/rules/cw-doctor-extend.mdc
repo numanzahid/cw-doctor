@@ -36,11 +36,15 @@ Do not hardcode client domains or extra vendor cache paths. Discover under `publ
 
 Tools are removed only by `uninstall.sh --purge` (entire `$CW_ROOT`), not by `cw_state_reverse`.
 
-## Add config consumed at install
+## Install from a clone
 
-- Shell: `config/shell.sh`, `aliases.sh`, `functions.sh` (sourced from managed `~/.bash_aliases` block)
-- Dotfiles: install via `cw_state_safe_symlink` in `install.sh` only if target missing
-- Do not edit `~/.bashrc` (immutable on Cloudways)
+`install.sh` **moves** the clone directory to `~/.local/opt/cw-doctor` (including `.git`), then deletes the clone path. Preserves existing `.state/`, `runtime/`, `tools/` on reinstall.
+
+- Staged relocate with rollback on failure (never leaves a half-moved tree)
+- Install continues in the same shell after move (no `exec`; does not depend on the clone path still existing)
+- Clone anywhere, run `./install.sh` once; no leftover `~/cw-doctor`
+- Reinstall from `${CW_ROOT}/install.sh` anytime
+- Updates: `cw update` runs `git pull --ff-only` in `$CW_ROOT` when `.git` exists
 
 ## `bin/` layout
 

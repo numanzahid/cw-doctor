@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## What this project is
 
-User-space SSH diagnostics for Cloudways. Install root: `~/.local/opt/cw-doctor`.
+User-space SSH diagnostics for Cloudways. Install root: `~/.local/opt/cw-doctor` (includes `.git`; `install.sh` removes the clone directory).
 Read-only on apps; no root, no auto-fixes, no production file edits.
 
 ## Output split (do not mix)

@@ -41,7 +41,7 @@ else
   fail=1
 fi
 rc=0
-cw_path_cmd >/dev/null 2>&1 || rc=$?
+( cw_path_cmd ) >/dev/null 2>&1 || rc=$?
 if [[ "$rc" -eq 0 ]]; then
   echo "FAIL: cw path should reject empty APP" >&2
   fail=1

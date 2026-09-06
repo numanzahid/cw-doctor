@@ -61,4 +61,4 @@ Tools are removed only by `uninstall.sh --purge` (entire `$CW_ROOT`), not by `cw
 
 ## fzf usage
 
-Bundled on PATH from `manifest/tools.list`. Used in `cw_apps_pick_interactive` (`lib/apps.sh`) for `cw path --pick` and bare `cda`/`cdapp`/`cdlogs`. Uses bundled `${CW_BIN_DIR}/fzf` and opens `</dev/tty` when stdout is captured (command substitution). Falls back to a numbered prompt if fzf is unavailable.
+Bundled on PATH from `manifest/tools.list`. Used in `cw_apps_pick_interactive` for `cw path --pick` and bare `cda`/`cdapp`/`cdlogs`. App lines are piped to fzf on stdin; use `2>/dev/tty` (not `0</dev/tty`) when stdout is captured so fzf does not walk the cwd. Falls back to a numbered prompt if fzf is unavailable.

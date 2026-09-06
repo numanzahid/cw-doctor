@@ -152,6 +152,40 @@ cw_apps_fzf_binary() {
   return 1
 }
 
+cw_apps_pick_lines() {
+  local apps_dir="$1"
+  shift
+  local apps=("$@") id url type
+  for id in "${apps[@]}"; do
+    url="$(cw_apps_primary_url "${apps_dir}/${id}")"
+    type="$(cw_apps_stack_type "${apps_dir}/${id}")"
+    printf '%-36s %-10s %s\n' "$url" "$type" "$id"
+  done
+}
+
+cw_apps_run_fzf() {
+  local fzf_bin="$1"
+  # Keep app lines on stdin (pipe). UI goes to /dev/tty when stdout is captured.
+  # Do NOT use 0</dev/tty; that drops the piped list and fzf walks the cwd.
+  if [[ -t 1 ]]; then
+    FZF_DEFAULT_COMMAND= FZF_CTRL_T_COMMAND= "$fzf_bin" \
+      --height=40% --reverse --prompt='cw app> ' --header='Select application' --no-multi
+  else
+    FZF_DEFAULT_COMMAND= FZF_CTRL_T_COMMAND= "$fzf_bin" \
+      --height=40% --reverse --prompt='cw app> ' --header='Select application' --no-multi 2>/dev/tty
+  fi
+}
+
+cw_apps_validate_picked_id() {
+  local picked="$1"
+  shift
+  local apps=("$@") id
+  for id in "${apps[@]}"; do
+    [[ "$id" == "$picked" ]] && return 0
+  done
+  return 1
+}
+
 cw_apps_pick_select() {
   local apps_dir="$1"
   shift
@@ -266,25 +300,16 @@ cw_apps_pick_interactive() {
     _cw_die "multiple apps; specify APP (domain or folder id)"
   fi
 
-  local apps_dir id url type picked fzf_bin
+  local apps_dir picked fzf_bin
   apps_dir="$(cw_platform_applications_dir)"
   if fzf_bin="$(cw_apps_fzf_binary)"; then
-    picked="$(while IFS= read -r id; do
-      url="$(cw_apps_primary_url "${apps_dir}/${id}")"
-      type="$(cw_apps_stack_type "${apps_dir}/${id}")"
-      printf '%-36s %-10s %s\n' "$url" "$type" "$id"
-    done <<< "$(printf '%s\n' "${apps[@]}")" | {
-      if [[ -t 1 ]]; then
-        "$fzf_bin" --height=40% --reverse
-      else
-        "$fzf_bin" --height=40% --reverse 0</dev/tty
-      fi
-    } | awk '{print $NF}')"
+    picked="$(cw_apps_pick_lines "$apps_dir" "${apps[@]}" | cw_apps_run_fzf "$fzf_bin" | awk '{print $NF}')"
   else
     picked="$(cw_apps_pick_select "$apps_dir" "${apps[@]}")"
   fi
 
   [[ -n "$picked" ]] || _cw_die "no app selected"
+  cw_apps_validate_picked_id "$picked" "${apps[@]}" || _cw_die "invalid app selection: $picked"
   printf '%s' "$picked"
 }
 

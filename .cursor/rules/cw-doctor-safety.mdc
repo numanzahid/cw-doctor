@@ -1,0 +1,36 @@
+---
+description: cw-doctor core safety, paths, and shareable vs toolkit output
+alwaysApply: true
+---
+
+# cw-doctor: core safety
+
+## What this project is
+
+User-space SSH diagnostics for Cloudways. Install root: `~/.local/opt/cw-doctor`.
+Read-only on apps; no root, no auto-fixes, no production file edits.
+
+## Output split (do not mix)
+
+| Audience | Commands | Branding |
+|----------|----------|----------|
+| Operator / install | `install.sh`, `uninstall.sh`, `cw status`, `cw update`, `cw collect` (terminal only), `cw help` | `cw-doctor:` + full paths OK |
+| Shareable diagnostics | `cw doctor`, `cpu`, `traffic`, `slow`, `watch`, `errors`, `cron`, `disk`, `apps`, `collect` report file (`summary.txt`) | NO `cw`, NO `cw-doctor`, NO install paths, NO command hints |
+
+- Diagnostic errors: `_cw_diag_die` / `_cw_die` -> `error: ...`
+- Toolkit errors: `_cw_toolkit_die` -> `cw-doctor: ...`
+- Reports: pipe through `_cw_redact_line` and `_cw_sanitize_report` (see `lib/collect.sh`)
+
+## Hard rules
+
+- Never hardcode `/home/master`; use `$HOME` and `lib/platform.sh` / `lib/apps.sh`.
+- Never write outside `$HOME` except via documented install mutations recorded in `install-state`.
+- Never modify WordPress/app files, `wp-config.php`, cron, or services.
+- `resources/` is gitignored reference material only; not runtime.
+- `.state/`, `runtime/`, `tools/` are gitignored on-disk install artifacts.
+
+## Before merging
+
+1. Run `tests/run-tests.sh`
+2. Test `cw status`, one diagnostic command, `cw collect`, then `uninstall.sh` (no `--purge`) and confirm `install-state` reversals
+3. Re-install and confirm `cw status` OK

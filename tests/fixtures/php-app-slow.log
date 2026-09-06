@@ -1,0 +1,8 @@
+[06-Sep-2026 16:45:16]  [pool example] pid 647996
+script_filename = /home/example/public_html/wp-admin/admin-ajax.php
+[0x00007f2ba66158d0] sleep() /home/example/public_html/wp-content/plugins/woocommerce/packages/action-scheduler/classes/ActionScheduler_AsyncRequest_QueueRunner.php:53
+[0x00007f2ba6615860] handle() /home/example/public_html/wp-content/plugins/woocommerce/includes/libraries/wp-async-request.php:147
+
+[06-Sep-2026 17:15:15]  [pool example] pid 652567
+script_filename = /home/example/public_html/wp-admin/admin-ajax.php
+[0x00007f2ba66158d0] sleep() /home/example/public_html/wp-content/plugins/woocommerce/packages/action-scheduler/classes/ActionScheduler_AsyncRequest_QueueRunner.php:53

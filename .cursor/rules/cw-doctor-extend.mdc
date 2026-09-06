@@ -1,0 +1,48 @@
+---
+description: How to add cw commands, app discovery, bundled tools, and bin scripts
+globs: lib/**/*.sh,bin/**,completions/**,manifest/**,install.sh
+alwaysApply: false
+---
+
+# Extending cw-doctor
+
+## Add a `cw` subcommand (diagnostic)
+
+1. Create `lib/<name>.sh` with `cw_<name>_cmd` and `cw_<name>_help`.
+2. Load in `bin/cw`: `_cw_load_lib <name>`.
+3. Add `case` branch in `bin/cw` (diagnostic commands use `_cw_die`, not toolkit branding).
+4. Update `completions/cw.bash` if APP arg is needed.
+5. Output: `_cw_section` / `_cw_observed` only. No `cw-doctor`, no `cw traffic` hints, no install paths.
+6. Optional: fixture under `tests/fixtures/` + assertion in `tests/run-tests.sh`.
+
+## App discovery (Cloudways)
+
+All app logic lives in `lib/apps.sh`:
+
+- List: scan `$HOME/applications/*/`
+- Primary URL: parse `conf/server.nginx` / `conf/server.apache` `server_name` (never execute PHP)
+- Resolve APP by folder id or exact domain alias via `cw_apps_resolve`
+- WordPress detect: `wp-config.php` / `wp-content` under `public_html`
+
+Do not hardcode client domains or extra vendor cache paths. Discover under `public_html` / `wp-content`.
+
+## Add a bundled tool (rg, lazygit, ...)
+
+1. Add name to `manifest/tools.list` (one per line).
+2. In `lib/tools.sh` `cw_tools_install_all`, call `cw_tools_install_github` or add installer (e.g. tmux deb).
+3. Wrapper lands in `bin/<name>` via `cw_tools_write_wrapper`.
+4. `cw_state_record tool "<name>" "<version>"` is already called inside installers.
+5. Verify: `cw status` lists tool OK; binary runs with `--version` or `-V` (tmux).
+
+Tools are removed only by `uninstall.sh --purge` (entire `$CW_ROOT`), not by `cw_state_reverse`.
+
+## Add config consumed at install
+
+- Shell: `config/shell.sh`, `aliases.sh`, `functions.sh` (sourced from managed `~/.bash_aliases` block)
+- Dotfiles: install via `cw_state_safe_symlink` in `install.sh` only if target missing
+- Do not edit `~/.bashrc` (immutable on Cloudways)
+
+## `bin/` layout
+
+- `bin/cw` = dispatcher only
+- Other `bin/*` = tool wrappers (exec upstream binary); not `cw` subcommands

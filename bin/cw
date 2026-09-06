@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+CW_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/common.sh
+source "${CW_ROOT}/lib/common.sh"
+_cw_load_lib platform
+_cw_load_lib state
+_cw_load_lib tools
+_cw_load_lib apps
+_cw_load_lib logs
+_cw_load_lib doctor
+_cw_load_lib cpu
+_cw_load_lib traffic
+_cw_load_lib slow
+_cw_load_lib watch
+_cw_load_lib errors
+_cw_load_lib cron
+_cw_load_lib disk
+_cw_load_lib collect
+_cw_load_lib update
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  apps)      cw_apps_cmd "$@" ;;
+  doctor)    cw_doctor_cmd "$@" ;;
+  cpu)       cw_cpu_cmd "$@" ;;
+  traffic)   cw_traffic_cmd "$@" ;;
+  slow)      cw_slow_cmd "$@" ;;
+  watch)     cw_watch_cmd "$@" ;;
+  errors)    cw_errors_cmd "$@" ;;
+  cron)      cw_cron_cmd "$@" ;;
+  disk)      cw_disk_cmd "$@" ;;
+  collect)   cw_collect_cmd "$@" ;;
+  status)    cw_status_cmd "$@" ;;
+  update)    cw_update_cmd "$@" ;;
+  uninstall) exec "${CW_ROOT}/uninstall.sh" "$@" ;;
+  help|-h|--help) _cw_help_global ;;
+  *)
+    if [[ -x "${CW_BIN_DIR}/${cmd}" ]]; then
+      exec "${CW_BIN_DIR}/${cmd}" "$@"
+    fi
+    _cw_toolkit_die "unknown command: $cmd (try: cw help)"
+    ;;
+esac

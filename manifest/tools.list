@@ -1,0 +1,10 @@
+# Tool names installed by cw-doctor (latest release at install/update time)
+rg
+fd
+fzf
+bat
+btop
+gdu
+tmux
+nvim
+lazygit

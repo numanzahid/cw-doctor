@@ -211,7 +211,7 @@ Admin (install, paths, updates):
   cw status            Install health and paths
   cw update [--force]    Pull code and refresh install (--force re-downloads tools)
   cw path [APP]        Print app path (pick if APP omitted)
-  cw uninstall [--purge] Reverse install (works from any directory)
+  cw uninstall         Remove install completely (from any directory)
 
 Shell navigation (after install): cda, cdapp, cdlogs, cgo, fcd, fnvim, fbat
   Ctrl+R               fzf fuzzy shell history

@@ -1,12 +1,12 @@
 ---
-description: Install-state, logging, and reversible uninstall requirements
-globs: lib/state.sh,install.sh,uninstall.sh,lib/tools.sh,config/**
+description: Install-state, logging, and uninstall requirements
+globs: lib/state.sh,install.sh,uninstall.sh,lib/tools.sh,config/**,lib/update.sh
 alwaysApply: false
 ---
 
 # Uninstall and install-state
 
-Uninstall must be reversible without `--purge`. Source of truth: `.state/install-state` (tab-separated).
+`cw uninstall` removes shell integration and deletes `$CW_ROOT` (`rm -rf`). Source of truth for reversible host edits: `.state/install-state` (tab-separated).
 
 ## Record every host mutation at install time
 
@@ -17,15 +17,15 @@ Use helpers in `lib/state.sh` only. Never silently edit user files.
 | Symlink dotfile | `cw_state_safe_symlink src dest` | `symlink` | Yes: removes symlink |
 | Create empty file we own | touch + `cw_state_record create` | `create` | Yes: deletes file |
 | Managed block in `~/.bash_aliases` | `cw_state_ensure_managed_block` | `modify` + `backup` | Yes: strips `# >>> cw >>>` block |
-| `~/.local/bin/cw` link | `install.sh` | `local-bin-symlink` | Yes (+ hardcoded in `uninstall.sh`) |
-| Download bundled tool | `cw_tools_install_*` | `tool` | No (needs `--purge`) |
-| Bundled tools timestamp | `cw_state_tools_mark_installed` -> `.state/tools-last-install` | (in `.state/`) | No (kept with `.state/`) |
-| Fetch runtime config | e.g. `.state/crawlers.json` | (in `.state/`) | No (kept with `.state/`) |
+| `~/.local/bin/cw` link | `install.sh` | `local-bin-symlink` | Yes (+ hardcoded in uninstall) |
+| Download bundled tool | `cw_tools_install_*` | `tool` | No (`rm -rf $CW_ROOT` on uninstall) |
+| Bundled tools timestamp | `cw_state_tools_mark_installed` | (in `.state/`) | No (deleted with `$CW_ROOT`) |
+| Crawler list | `.state/crawlers.json` | (in `.state/`) | No (deleted with `$CW_ROOT`) |
 
 If you add a **new** mutation kind, you MUST:
 
 1. Call `cw_state_record <kind> <path> <extra>` during install/update
-2. Implement reverse logic in `cw_state_reverse` (new `case` branch), OR document that `--purge` is required
+2. Implement reverse logic in `cw_state_reverse` (new `case` branch) when the path is outside `$CW_ROOT`
 3. Append human line to `install.log` via `cw_state_log "..."`
 
 ## Logging
@@ -34,22 +34,20 @@ If you add a **new** mutation kind, you MUST:
 - Log install start/finish, update, collect report id (not full paths in collect log if avoidable)
 - Permissions: `.state/` 0700, `install-state` 0600
 
-## Uninstall flow (`uninstall.sh`)
+## Uninstall flow (`cw uninstall` / `uninstall.sh`)
 
 1. `cw_state_reverse` (LIFO over `install-state`)
 2. Remove `~/.local/bin/cw` if symlink
-3. Without `--purge`: keep `$CW_ROOT` and `.state/reports/`
-4. With `--purge`: `rm -rf $CW_ROOT`
+3. `rm -rf $CW_ROOT` (tools, shims, `.state`, source)
 
 ## Checklist for any install-side change
 
 ```
 [ ] Mutation goes through cw_state_* helper
-[ ] install-state row written
+[ ] install-state row written when path is outside $CW_ROOT
 [ ] install.log line written
-[ ] cw_state_reverse handles it OR --purge documented
-[ ] uninstall.sh tested on cw-ataki-dev (no --purge): bash_aliases clean, symlinks gone, cw off PATH
-[ ] uninstall.sh --purge tested in dev: $CW_ROOT removed
+[ ] cw_state_reverse handles paths outside $CW_ROOT
+[ ] uninstall tested: bash_aliases clean, symlinks gone, cw off PATH, $CW_ROOT removed
 [ ] Re-install works after uninstall
 ```
 
@@ -57,5 +55,4 @@ If you add a **new** mutation kind, you MUST:
 
 - Do not `rm -rf` user paths in diagnostic commands
 - Do not add second managed block markers (use `CW_MANAGED_BEGIN` / `CW_MANAGED_END` in `lib/common.sh`)
-- Do not write install files without recording them
-- If `cw_state_safe_symlink` returns false (target exists), do not overwrite; document manual step
+- Do not write install files outside `$CW_ROOT` without recording them in `install-state`

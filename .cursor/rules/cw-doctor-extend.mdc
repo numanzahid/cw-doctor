@@ -37,7 +37,7 @@ All app logic in `lib/apps.sh`:
 4. `cw_state_record tool "<name>" "<version>"` inside installers.
 5. Verify: `cw status`; binary `--version` / `-V`.
 
-Tools removed only by `uninstall.sh --purge`, not `cw_state_reverse`.
+Tools and shims live under `$CW_ROOT`; removed by `cw uninstall` (`rm -rf $CW_ROOT`).
 
 ## Install from a clone
 

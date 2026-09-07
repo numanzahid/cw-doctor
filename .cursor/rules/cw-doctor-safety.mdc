@@ -43,5 +43,5 @@ Log files: use `_cw_log_path_issue` + `cw_logs_path_status` (`lib/logs.sh`). Emp
 ## Before merging
 
 1. Run `tests/run-tests.sh`
-2. Test `cw status`, one diagnostic command, `cw collect`, then `uninstall.sh` (no `--purge`) and confirm `install-state` reversals
+2. Test `cw status`, one diagnostic command, `cw collect`, then `cw uninstall` and confirm install dir removed
 3. Re-install and confirm `cw status` OK

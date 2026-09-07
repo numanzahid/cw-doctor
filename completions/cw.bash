@@ -24,9 +24,6 @@ _cw_complete() {
         reports)
           COMPREPLY=($(compgen -W "--open" -- "$cur"))
           ;;
-        uninstall)
-          COMPREPLY=($(compgen -W "--purge" -- "$cur"))
-          ;;
       esac
       ;;
     3)

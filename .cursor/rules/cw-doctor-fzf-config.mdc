@@ -69,4 +69,4 @@ Display **primary domain** from `cw_apps_primary_url`, not folder id alone. Reso
 | `config/crawlers.json` | Traffic crawler UA patterns (`lib/traffic.sh`; stored in `.state/crawlers.json`) |
 | `manifest/tools.list` | Bundled CLI tools (`lib/tools.sh`) |
 
-Fetched/installed at setup; recorded in `install-state` as `file` / `tool` (purge-only removal).
+Fetched/installed at setup; lives under `$CW_ROOT` / `.state` (removed by `cw uninstall`).

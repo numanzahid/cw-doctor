@@ -7,9 +7,7 @@ fail=0
 ok()  { echo "PASS: $*"; pass=$((pass+1)); }
 bad() { echo "FAIL: $*"; fail=$((fail+1)); }
 
-purge="${1:-}"
-
-echo "=== UNINSTALL VERIFY (purge=$purge) ==="
+echo "=== UNINSTALL VERIFY ==="
 
 if grep -q 'cw-doctor' "${HOME}/.bash_aliases" 2>/dev/null; then
   bad "bash_aliases still has cw-doctor block"
@@ -31,24 +29,12 @@ for f in .tmux.conf .inputrc; do
   fi
 done
 
-if [[ "$purge" == "--purge" ]]; then
-  if [[ -d "${HOME}/.local/opt/cw-doctor" ]]; then
-    bad "install dir still exists after --purge"
-  else
-    ok "install dir removed"
-  fi
+if [[ -d "${HOME}/.local/opt/cw-doctor" ]]; then
+  bad "install dir still exists"
 else
-  if [[ -d "${HOME}/.local/opt/cw-doctor" ]]; then
-    ok "install dir preserved (no --purge)"
-    if [[ -d "${HOME}/.local/opt/cw-doctor/.state/reports" ]]; then
-      ok "reports dir preserved"
-    fi
-  else
-    bad "install dir missing unexpectedly"
-  fi
+  ok "install dir removed"
 fi
 
-# cw should not work without full path after uninstall
 if command -v cw >/dev/null 2>&1; then
   bad "cw still on PATH"
 else

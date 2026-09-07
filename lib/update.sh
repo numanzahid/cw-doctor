@@ -187,11 +187,10 @@ EOF
 }
 
 cw_uninstall_cmd() {
-  local purge=0
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --purge)
-        purge=1
+        _cw_toolkit_warn "--purge is no longer used; cw uninstall always removes the install directory"
         shift
         ;;
       -h|--help)
@@ -208,34 +207,25 @@ cw_uninstall_cmd() {
   _cw_toolkit_label "install" "$CW_ROOT"
   _cw_toolkit_label "state" "$CW_STATE_DIR"
 
-  if [[ "$purge" == 0 ]]; then
-    _cw_toolkit_info "reports preserved under ${CW_STATE_DIR}/reports/"
-    _cw_toolkit_info "use cw uninstall --purge to remove the install directory"
-  fi
-
   cw_state_reverse
 
   if [[ -L "${HOME}/.local/bin/cw" ]]; then
     rm -f "${HOME}/.local/bin/cw"
   fi
 
-  if [[ "$purge" == 1 ]]; then
-    _cw_toolkit_info "removing ${CW_ROOT}"
-    rm -rf "$CW_ROOT"
-  else
-    _cw_toolkit_info "shell integration removed; install files remain at ${CW_ROOT}"
-  fi
+  _cw_toolkit_info "removing ${CW_ROOT}"
+  rm -rf "$CW_ROOT"
 
   _cw_toolkit_info "done"
 }
 
 cw_uninstall_help() {
   cat <<EOF
-Usage: cw uninstall [--purge]
+Usage: cw uninstall
 
-  Reverse install changes (from any directory; uses install at ${CW_ROOT:-~/.local/opt/cw-doctor}).
+  Remove shell integration and delete the install directory (${CW_ROOT:-~/.local/opt/cw-doctor}).
+  Works from any directory while cw is on PATH.
 
-  Default: remove shell integration and recorded symlinks; keep install dir and reports.
-  --purge: also delete the entire install directory (tools, shims, .state).
+  Re-install: git clone the repo and run ./install.sh
 EOF
 }

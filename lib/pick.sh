@@ -221,7 +221,7 @@ cw_pick_command() {
       wp "List WordPress plugins or themes" \
       status "Install health check" \
       update "Pull code and refresh install (--force re-downloads tools)" \
-      uninstall "Remove shell integration (or --purge entire install)" \
+      uninstall "Remove cw-doctor completely" \
       help "Show command help")" || _cw_die "no command selected"
   else
     cat >&2 <<'EOF'

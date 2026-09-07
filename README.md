@@ -108,7 +108,7 @@ Omit APP on most commands to get an fzf picker (domain-labeled). For `doctor`, `
 | `cw wp [APP]` | Pick plugin or theme directory |
 | `cw status` | Install health check |
 | `cw update [--force]` | Pull code + refresh install (use daily; --force re-downloads tools) |
-| `cw uninstall [--purge]` | Reverse install from any directory (`--purge` removes install dir) |
+| `cw uninstall` | Remove shell integration and delete `~/.local/opt/cw-doctor` |
 
 ## Safety
 
@@ -119,10 +119,7 @@ Omit APP on most commands to get an fzf picker (domain-labeled). For `doctor`, `
 ## Uninstall
 
 ```bash
-cw uninstall          # from anywhere (removes shell hooks; keeps install dir)
-cw uninstall --purge    # also deletes ~/.local/opt/cw-doctor
+cw uninstall    # removes hooks and deletes ~/.local/opt/cw-doctor
 ```
 
-Or: `~/.local/opt/cw-doctor/uninstall.sh` (same as `cw uninstall`).
-
-Reports in `.state/reports/` are preserved unless you use `--purge`.
+Re-install: clone the repo and run `./install.sh`.

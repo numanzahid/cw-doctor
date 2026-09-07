@@ -168,6 +168,22 @@ cw_apps_detect_wp_cli() {
   fi
 }
 
+# Pick the most useful single line from wp-cli stderr/stdout when bootstrap fails.
+cw_apps_wp_cli_error_summary() {
+  local out="$1" line
+  line="$(printf '%s\n' "$out" | grep -E '^(PHP )?Fatal error:|^Fatal error:|objectcache\.critical:' | tail -1)"
+  if [[ -z "$line" ]]; then
+    line="$(printf '%s\n' "$out" | grep -E '^Error:' | tail -1)"
+  fi
+  if [[ -z "$line" ]]; then
+    line="$(printf '%s\n' "$out" | grep -E '^(PHP )?Warning:' | tail -1)"
+  fi
+  if [[ -z "$line" ]]; then
+    line="$(printf '%s\n' "$out" | sed '/^[[:space:]]*$/d' | tail -1)"
+  fi
+  printf '%s' "$line"
+}
+
 cw_apps_read_disable_wp_cron() {
   local cfg="$1/wp-config.php"
   if [[ ! -r "$cfg" ]]; then

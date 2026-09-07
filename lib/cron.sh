@@ -52,11 +52,12 @@ cw_cron_cmd() {
     if [[ $? -eq 0 ]] && [[ -n "$wp_out" ]]; then
       echo "$wp_out" | head -20
     else
-      wp_err="$(printf '%s\n' "$wp_out" | sed '/^[[:space:]]*$/d' | head -1)"
+      wp_err="$(cw_apps_wp_cli_error_summary "$wp_out")"
       if [[ -n "$wp_err" ]]; then
-        _cw_observed "wp-cli error: $(printf '%s' "$wp_err" | _cw_redact_line)"
+        _cw_observed "wp-cli: $(printf '%s' "$wp_err" | _cw_redact_line)"
       fi
-      _cw_unavailable "wp cron event list failed (WP-CLI could not bootstrap WordPress)"
+      _cw_observed "wp cron event list skipped (WordPress bootstrap failed; site/plugin config, not SSH access)"
+      _cw_possible "Fix object-cache drop-in, wp-salt.php, or Redis/object-cache plugin before wp-cli cron works"
     fi
   else
     _cw_unavailable "wp-cli not available"

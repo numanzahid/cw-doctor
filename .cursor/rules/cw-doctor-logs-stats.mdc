@@ -79,7 +79,7 @@ In `lib/apps.sh` only:
 
 - Domains: parse `conf/server.nginx` / `conf/server.apache` (`server_name`, `ServerName`, `ServerAlias`) -- never execute PHP
 - `cw_apps_read_disable_wp_cron` -- grep `wp-config.php` for `DISABLE_WP_CRON`
-- WP-CLI: show first error line on failure (`cw cron`); stderr is not hidden from operator context
+- WP-CLI: on bootstrap failure use `cw_apps_wp_cli_error_summary` (prefer Fatal/objectcache lines); `OBSERVED` not `UNAVAILABLE` (SSH can run wp; WordPress is broken)
 
 ## Tests
 

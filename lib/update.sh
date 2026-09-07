@@ -65,11 +65,13 @@ cw_doctor_sync() {
   local force="${1:-0}"
   cw_platform_preflight
   cw_state_init
+  cw_tools_migrate_legacy_layout
   cw_state_ensure_managed_block "$CW_ALIASES_FILE" "${CW_ROOT}/config/shell.sh"
   cw_state_migrate_managed_block "$CW_ALIASES_FILE"
   cw_state_safe_symlink "${CW_ROOT}/config/tmux.conf" "${HOME}/.tmux.conf" || true
   cw_state_safe_symlink "${CW_ROOT}/config/inputrc" "${HOME}/.inputrc" || true
-  chmod +x "${CW_ROOT}/bin/cw" "${CW_ROOT}/bin/cw-view" "${CW_ROOT}/uninstall.sh" 2>/dev/null || true
+  chmod +x "${CW_ROOT}/bin/cw" "${CW_ROOT}/uninstall.sh" 2>/dev/null || true
+  [[ -f "${CW_ROOT}/bin/cw-view" ]] && chmod +x "${CW_ROOT}/bin/cw-view" 2>/dev/null || true
   cw_tools_install_all "$force"
   cw_tools_fetch_crawlers
   if [[ ! -L "${HOME}/.local/bin/cw" ]]; then
@@ -182,5 +184,59 @@ Usage: cw update [--force]
   to confirm discarding them before reset --hard to upstream.
 
   First-time setup: run ./install.sh once, then use cw update from then on.
+EOF
+}
+
+cw_uninstall_cmd() {
+  local purge=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --purge)
+        purge=1
+        shift
+        ;;
+      -h|--help)
+        cw_uninstall_help
+        return 0
+        ;;
+      *)
+        _cw_toolkit_die "unknown option: $1 (try: cw uninstall --help)"
+        ;;
+    esac
+  done
+
+  _cw_toolkit_section "uninstall"
+  _cw_toolkit_label "install" "$CW_ROOT"
+  _cw_toolkit_label "state" "$CW_STATE_DIR"
+
+  if [[ "$purge" == 0 ]]; then
+    _cw_toolkit_info "reports preserved under ${CW_STATE_DIR}/reports/"
+    _cw_toolkit_info "use cw uninstall --purge to remove the install directory"
+  fi
+
+  cw_state_reverse
+
+  if [[ -L "${HOME}/.local/bin/cw" ]]; then
+    rm -f "${HOME}/.local/bin/cw"
+  fi
+
+  if [[ "$purge" == 1 ]]; then
+    _cw_toolkit_info "removing ${CW_ROOT}"
+    rm -rf "$CW_ROOT"
+  else
+    _cw_toolkit_info "shell integration removed; install files remain at ${CW_ROOT}"
+  fi
+
+  _cw_toolkit_info "done"
+}
+
+cw_uninstall_help() {
+  cat <<EOF
+Usage: cw uninstall [--purge]
+
+  Reverse install changes (from any directory; uses install at ${CW_ROOT:-~/.local/opt/cw-doctor}).
+
+  Default: remove shell integration and recorded symlinks; keep install dir and reports.
+  --purge: also delete the entire install directory (tools, shims, .state).
 EOF
 }

@@ -229,7 +229,6 @@ cw_tools_refresh_needed() {
 
 cw_tools_install_all() {
   local force="${1:-0}"
-  cw_tools_migrate_legacy_layout
   mkdir -p "$CW_TOOLS_DIR" "$CW_SHIMS_DIR" "$CW_BIN_DIR"
   if ! cw_tools_refresh_needed "$force"; then
     local last

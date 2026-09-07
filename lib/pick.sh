@@ -221,6 +221,7 @@ cw_pick_command() {
       wp "List WordPress plugins or themes" \
       status "Install health check" \
       update "Pull code and refresh install (--force re-downloads tools)" \
+      uninstall "Remove shell integration (or --purge entire install)" \
       help "Show command help")" || _cw_die "no command selected"
   else
     cat >&2 <<'EOF'
@@ -450,6 +451,7 @@ cw_menu_cmd() {
     wp) cw_wp_cmd ;;
     status) cw_status_cmd ;;
     update) cw_update_cmd ;;
+    uninstall) cw_uninstall_cmd ;;
     help) _cw_help_global ;;
     *)
       _cw_die "unknown menu command: $cmd"

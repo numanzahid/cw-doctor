@@ -68,6 +68,24 @@ cw_pick_fallback_read() {
   printf '%s' "$choice"
 }
 
+# Labeled fzf list: key + description columns (avoids tab-delimiter bugs).
+cw_pick_labeled() {
+  local header="$1" prompt="$2" width="$3"
+  shift 3
+  local key desc picked
+  [[ $# -ge 2 ]] || return 1
+  picked="$(
+    while [[ $# -ge 2 ]]; do
+      key="$1"
+      desc="$2"
+      shift 2
+      printf '%-'"${width}"'s %s\n' "$key" "$desc"
+    done | cw_pick_run_fzf "$header" "$prompt" | awk '{print $1}'
+  )"
+  [[ -n "$picked" ]] || return 1
+  printf '%s' "$picked"
+}
+
 cw_apps_pick_lines() {
   local apps_dir="$1"
   shift
@@ -183,35 +201,38 @@ cw_apps_pick_with_scope() {
 
 cw_pick_command() {
   cw_pick_require_interactive
-  local lines picked
-  lines="$(cat <<'EOF'
-apps	List applications on this server
-path	Print app directory path
-doctor	Server and app health snapshot
-cpu	CPU, RAM, and processes
-traffic	Access log traffic analysis
-slow	PHP slow log analysis
-watch	Live log tail
-logs	Browse and view log files
-errors	Error log summary
-cron	WP cron and admin-ajax activity
-disk	Disk and inode usage
-collect	Write sanitized report bundle
-reports	Browse past collect reports
-go	Jump path within an app
-wp	List WordPress plugins or themes
-status	Install health check
-update	Manual update (git pull + tools)
-help	Show command help
-EOF
-)"
+  local picked
   if cw_pick_fzf_binary >/dev/null; then
-    picked="$(printf '%s\n' "$lines" | cw_pick_run_fzf "cw-doctor commands" "cw> " --delimiter=$'\t' --with-nth=1.. | awk -F '\t' '{print $1}')"
+    picked="$(cw_pick_labeled "cw-doctor commands" "cw> " 16 \
+      apps "List applications on this server" \
+      path "Print app directory path" \
+      doctor "Server and app health snapshot" \
+      cpu "CPU, RAM, and processes" \
+      traffic "Access log traffic analysis" \
+      slow "PHP slow log analysis" \
+      watch "Live log tail" \
+      logs "Browse and view log files" \
+      errors "Error log summary" \
+      cron "WP cron and admin-ajax activity" \
+      disk "Disk and inode usage" \
+      collect "Write sanitized report bundle" \
+      reports "Browse past collect reports" \
+      go "Jump path within an app" \
+      wp "List WordPress plugins or themes" \
+      status "Install health check" \
+      update "Manual update (git pull + tools)" \
+      help "Show command help")" || _cw_die "no command selected"
   else
-    printf '%s\n' "$lines" | awk -F '\t' '{printf "  %s\n", $0}' >&2
-    picked="$(cw_pick_fallback_read 'Command name: ')"
+    cat >&2 <<'EOF'
+  apps       List applications on this server
+  watch      Live log tail
+  traffic    Access log traffic analysis
+  logs       Browse and view log files
+  reports    Browse past collect reports
+  help       Show command help
+EOF
+    picked="$(cw_pick_fallback_read 'Command name: ')" || _cw_die "no command selected"
   fi
-  [[ -n "$picked" ]] || _cw_die "no command selected"
   printf '%s' "$picked"
 }
 
@@ -219,19 +240,17 @@ cw_pick_watch_mode() {
   local mode="${1:-}"
   [[ -n "$mode" ]] && { printf '%s' "$mode"; return 0; }
   cw_pick_require_interactive
-  local lines picked
-  lines="$(printf '%s\n' \
-    'all\tAll log streams' \
-    'access\tAccess log' \
-    'php\tPHP app log' \
-    'errors\tError and debug logs' \
-    'slow\tPHP slow log')"
+  local picked
   if cw_pick_fzf_binary >/dev/null; then
-    picked="$(printf '%s' "$lines" | cw_pick_run_fzf "Watch mode" "cw watch> " --delimiter=$'\t' --with-nth=2.. | awk -F '\t' '{print $1}')"
+    picked="$(cw_pick_labeled "Watch mode" "cw watch> " 10 \
+      all "All log streams" \
+      access "Access log" \
+      php "PHP app log" \
+      errors "Error and debug logs" \
+      slow "PHP slow log")" || _cw_die "no watch mode selected"
   else
-    picked="$(cw_pick_fallback_read 'Watch mode (all|access|php|errors|slow): ')"
+    picked="$(cw_pick_fallback_read 'Watch mode (all|access|php|errors|slow): ')" || _cw_die "no watch mode selected"
   fi
-  [[ -n "$picked" ]] || _cw_die "no watch mode selected"
   printf '%s' "$picked"
 }
 
@@ -240,16 +259,14 @@ cw_pick_path_target() {
   [[ -n "$target" ]] && { printf '%s' "$target"; return 0; }
   cw_pick_require_interactive
   local picked
-  local lines="$(printf '%s\n' \
-    'web\tpublic_html' \
-    'app\tApplication root' \
-    'logs\tLogs directory')"
   if cw_pick_fzf_binary >/dev/null; then
-    picked="$(printf '%s' "$lines" | cw_pick_run_fzf "Path target" "cw path> " --delimiter=$'\t' --with-nth=2.. | awk -F '\t' '{print $1}')"
+    picked="$(cw_pick_labeled "Path target" "cw path> " 8 \
+      web "public_html" \
+      app "Application root" \
+      logs "Logs directory")" || _cw_die "no path target selected"
   else
-    picked="$(cw_pick_fallback_read 'Target (web|app|logs): ')"
+    picked="$(cw_pick_fallback_read 'Target (web|app|logs): ')" || _cw_die "no path target selected"
   fi
-  [[ -n "$picked" ]] || _cw_die "no path target selected"
   printf '%s' "$picked"
 }
 
@@ -356,14 +373,14 @@ cw_pick_wp_kind() {
   local kind="${1:-}"
   [[ -n "$kind" ]] && { printf '%s' "$kind"; return 0; }
   cw_pick_require_interactive
-  local picked lines
-  lines="$(printf '%s\n' 'plugins\tPlugin directories' 'themes\tTheme directories')"
+  local picked
   if cw_pick_fzf_binary >/dev/null; then
-    picked="$(printf '%s' "$lines" | cw_pick_run_fzf "WordPress path" "cw wp> " --delimiter=$'\t' --with-nth=2.. | awk -F '\t' '{print $1}')"
+    picked="$(cw_pick_labeled "WordPress path" "cw wp> " 10 \
+      plugins "Plugin directories" \
+      themes "Theme directories")" || _cw_die "no kind selected"
   else
-    picked="$(cw_pick_fallback_read 'Kind (plugins|themes): ')"
+    picked="$(cw_pick_fallback_read 'Kind (plugins|themes): ')" || _cw_die "no kind selected"
   fi
-  [[ -n "$picked" ]] || _cw_die "no kind selected"
   printf '%s' "$picked"
 }
 

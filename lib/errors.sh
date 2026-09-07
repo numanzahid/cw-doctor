@@ -20,13 +20,17 @@ cw_errors_cmd() {
     return 0
   fi
 
-  local combined sample lines
+  local combined sample lines meta_parts=() f
   combined="$(mktemp)"
   for f in "${files[@]}"; do
     cw_logs_sample_file "$f" "$CW_ERROR_SAMPLE_LINES" >> "$combined"
+    meta_parts+=("$(basename "$f"): $(cw_logs_sample_meta)")
   done
-  lines="$(wc -l < "$combined")"
+  lines="$(wc -l < "$combined" | tr -d ' ')"
   _cw_observed "Analyzed $lines lines from ${#files[@]} log(s)"
+  for f in "${meta_parts[@]}"; do
+    _cw_observed "  $f"
+  done
 
   awk '
   {

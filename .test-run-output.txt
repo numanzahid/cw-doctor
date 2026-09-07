@@ -1,4 +1,5 @@
 PASS: access fingerprint
 PASS: php-app fingerprint
 PASS: cw path resolves domain
+PASS: log sample includes rotated files
 SKIP: shellcheck not installed

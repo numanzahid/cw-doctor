@@ -21,7 +21,7 @@ cw_traffic_cmd() {
   lines="$(echo "$sample" | wc -l)"
 
   _cw_section "Traffic: $app"
-  _cw_observed "Analyzed last $lines lines from $(basename "$access")"
+  _cw_observed "Analyzed $(cw_logs_sample_meta)"
 
   local crawler_file
   crawler_file="$(_cw_traffic_crawler_file)"

@@ -57,23 +57,23 @@ cw_doctor_cmd() {
     access="$(cw_logs_find_access "$logs_dir" 2>/dev/null || true)"
     error="$(cw_logs_find_error "$logs_dir" 2>/dev/null || true)"
     if [[ -n "$access" ]]; then
-      local fp lines
+      local fp sample_5xx fivexx
       fp="$(cw_logs_fingerprint_combined "$access")"
-      lines="$(wc -l < "$access" 2>/dev/null || echo 0)"
       _cw_label "access format" "$fp"
-      _cw_label "access lines" "$lines (current file)"
       if [[ "$fp" == combined ]]; then
-        local fivexx
-        fivexx="$(_cw_tail_sample "$access" 5000 | awk '{
+        sample_5xx="$(cw_logs_sample_file "$access" 5000)"
+        fivexx="$(echo "$sample_5xx" | awk '{
           if (match($0, /" ([0-9]{3}) /, a) && a[1] >= 500) c++
         } END { print c+0 }')"
-        _cw_label "recent 5xx (sample)" "$fivexx in last 5000 lines"
+        _cw_label "recent 5xx (sample)" "$fivexx in sample ($(cw_logs_sample_meta))"
       fi
     fi
     if [[ -n "$error" ]]; then
-      local elines
-      elines="$(wc -l < "$error" 2>/dev/null || echo 0)"
-      _cw_label "error log lines" "$elines (current file)"
+      local elines erot total_e
+      elines="$(wc -l < "$error" 2>/dev/null | tr -d ' ')"
+      erot="$(cw_logs_rotated_count "$error")"
+      total_e="$(cw_logs_count_lines_total "$error")"
+      _cw_label "error log lines" "${elines:-0} active, ${total_e:-0} incl. rotations (${erot} rotated file(s))"
     fi
   else
     _cw_possible "Specify an app name for per-app details"

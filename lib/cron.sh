@@ -20,7 +20,13 @@ cw_cron_cmd() {
     lines="$(echo "$sample" | wc -l)"
     cron="$(echo "$sample" | grep -c 'wp-cron\.php' || true)"
     ajax="$(echo "$sample" | grep -c 'admin-ajax\.php' || true)"
-    _cw_observed "From last $lines access log lines:"
+    local meta
+    meta="$(cw_logs_sample_meta)"
+    if [[ -n "$meta" ]]; then
+      _cw_observed "From $meta:"
+    else
+      _cw_observed "From last $lines access log lines:"
+    fi
     _cw_label "wp-cron.php hits" "$cron"
     _cw_label "admin-ajax.php hits" "$ajax"
     if [[ "$lines" -gt 0 ]]; then
@@ -29,7 +35,7 @@ cw_cron_cmd() {
       }'
     fi
   else
-    _cw_unavailable "access log for wp-cron counts"
+    _cw_observed "access log: not found or not readable under $logs_dir"
   fi
 
   _cw_section "User crontab"
@@ -41,7 +47,17 @@ cw_cron_cmd() {
 
   _cw_section "WP-CLI cron (read-only)"
   if command -v wp >/dev/null 2>&1 && cw_apps_is_wordpress "$base"; then
-    wp cron event list --path="$pub" 2>/dev/null | head -20 || _cw_unavailable "wp cron event list failed"
+    local wp_out wp_err
+    wp_out="$(wp cron event list --path="$pub" 2>&1)"
+    if [[ $? -eq 0 ]] && [[ -n "$wp_out" ]]; then
+      echo "$wp_out" | head -20
+    else
+      wp_err="$(printf '%s\n' "$wp_out" | sed '/^[[:space:]]*$/d' | head -1)"
+      if [[ -n "$wp_err" ]]; then
+        _cw_observed "wp-cli error: $(printf '%s' "$wp_err" | _cw_redact_line)"
+      fi
+      _cw_unavailable "wp cron event list failed (WP-CLI could not bootstrap WordPress)"
+    fi
   else
     _cw_unavailable "wp-cli not available"
   fi

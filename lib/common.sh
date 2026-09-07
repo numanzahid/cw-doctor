@@ -73,6 +73,29 @@ _cw_possible() { echo "POSSIBLE: $*"; }
 _cw_not_established() { echo "NOT ESTABLISHED: $*"; }
 _cw_unavailable() { echo "UNAVAILABLE TO SSH USER: $*"; }
 
+# Log path diagnostics: missing, denied, empty, or ok (see lib/logs.sh cw_logs_path_status).
+_cw_log_path_issue() {
+  local status="$1" path="$2" label="$3" detail="${4:-}"
+  case "$status" in
+    missing)
+      _cw_observed "${label}: file not found (${path})"
+      ;;
+    denied)
+      _cw_unavailable "${label}: exists but not readable by SSH user (${path})"
+      ;;
+    empty)
+      if [[ -n "$detail" ]]; then
+        _cw_observed "${label}: exists but empty (${detail})"
+      else
+        _cw_observed "${label}: exists but empty (${path})"
+      fi
+      ;;
+    *)
+      _cw_unavailable "${label}: ${detail:-$path}"
+      ;;
+  esac
+}
+
 _cw_require_cmd() {
   local cmd="$1"
   command -v "$cmd" >/dev/null 2>&1 || _cw_die "required command not found: $cmd"

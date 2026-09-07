@@ -67,3 +67,7 @@ Tools are removed only by `uninstall.sh --purge` (entire `$CW_ROOT`), not by `cw
 ## fzf usage
 
 Bundled on PATH. Used for app/command/log/report/path pickers. Pipe data on stdin; use `2>/dev/tty` when stdout is captured. Never `0</dev/tty` on stdin (drops piped list).
+
+## Log sampling
+
+`cw_logs_sample_file` reads the active log plus rotated siblings (`*.1`, `*.2`, `*.gz`, `*-date`) newest-first until the sample limit. Used by traffic, cron, errors, slow, and doctor 5xx checks. `cw watch` still tails only the live active file.

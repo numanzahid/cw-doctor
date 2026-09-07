@@ -118,8 +118,8 @@ fbat() {
     target="${root}/${file#./}"
   fi
   [[ -f "$target" ]] || { echo "error: not a file: $target" >&2; return 1; }
-  if [[ -x "${_CW_SHELL_ROOT}/bin/cw-view" ]]; then
-    "${_CW_SHELL_ROOT}/bin/cw-view" "$target"
+  if [[ -f "${_CW_SHELL_ROOT}/bin/cw-view" ]]; then
+    bash "${_CW_SHELL_ROOT}/bin/cw-view" "$target"
   elif [[ -f "${_CW_SHELL_ROOT}/lib/common.sh" ]]; then
     CW_ROOT="${_CW_SHELL_ROOT}"
     CW_BIN_DIR="${_CW_SHELL_ROOT}/bin"

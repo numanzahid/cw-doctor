@@ -71,7 +71,6 @@ cw_doctor_sync() {
   cw_state_safe_symlink "${CW_ROOT}/config/tmux.conf" "${HOME}/.tmux.conf" || true
   cw_state_safe_symlink "${CW_ROOT}/config/inputrc" "${HOME}/.inputrc" || true
   chmod +x "${CW_ROOT}/bin/cw" "${CW_ROOT}/uninstall.sh" 2>/dev/null || true
-  [[ -f "${CW_ROOT}/bin/cw-view" ]] && chmod +x "${CW_ROOT}/bin/cw-view" 2>/dev/null || true
   cw_tools_install_all "$force"
   cw_tools_fetch_crawlers
   if [[ ! -L "${HOME}/.local/bin/cw" ]]; then

@@ -463,14 +463,7 @@ cw_menu_help() {
 }
 
 cw_logs_view_file() {
-  local file="$1"
-  if [[ -x "${CW_BIN_DIR}/bat" ]]; then
-    "${CW_BIN_DIR}/bat" --paging=always "$file"
-  elif command -v bat >/dev/null 2>&1; then
-    bat --paging=always "$file"
-  else
-    tail -n 100 "$file"
-  fi
+  _cw_view_file "$1"
 }
 
 cw_logs_cmd() {
@@ -517,7 +510,7 @@ cw_logs_cmd() {
 
 cw_logs_help() {
   echo "Usage: cw logs [APP] [--list|--tail]"
-  echo "Browse log files (fzf picker when APP omitted). Default: view with bat or tail."
+  echo "Browse log files (fzf picker when APP omitted). Default: view with bat (no pager) or cat."
 }
 
 cw_reports_cmd() {

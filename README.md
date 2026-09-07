@@ -51,7 +51,7 @@ cw          # pick command -> pick app/options -> run
 cw menu     # same
 cw traffic  # pick app if omitted, then run
 cw watch    # pick app, pick mode, then tail
-cw logs     # pick app, pick log file, view with bat
+cw logs     # pick app, pick log file, print with bat (no pager)
 cw reports --open   # pick past report, view summary
 ```
 
@@ -65,7 +65,7 @@ Omit APP on most commands to get an fzf picker (domain-labeled). For `doctor`, `
 | `cgo` | cd to path from `cw go` |
 | `fcd [DIR]` | fzf pick a subfolder under DIR (default `.`) and cd |
 | `fnvim [DIR]` | fzf pick a file under DIR (default `.`) and open in nvim |
-| `fbat [DIR]` | fzf pick a file (bat preview in picker), then view with bat |
+| `fbat [DIR]` | fzf pick a file (bat preview in picker), then print with bat (no pager) |
 
 **Ctrl+R** uses fzf fuzzy history search (via `fzf --bash` in shell integration).
 
@@ -81,7 +81,7 @@ Omit APP on most commands to get an fzf picker (domain-labeled). For `doctor`, `
 | `cw traffic [APP]` | Access log traffic analysis |
 | `cw slow [APP]` | PHP slow log analysis |
 | `cw watch [APP] [mode]` | Live log tail |
-| `cw logs [APP]` | Browse/view log files |
+| `cw logs [APP]` | Browse/view log files (stdout, no pager) |
 | `cw errors [APP]` | Error log summary |
 | `cw cron [APP]` | WP cron and admin-ajax activity |
 | `cw disk [APP]` | Disk and inode usage |

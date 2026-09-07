@@ -1,0 +1,92 @@
+---
+description: Log discovery, rotation sampling, fingerprints, and diagnostic output stats
+globs: lib/logs.sh,lib/slow.sh,lib/traffic.sh,lib/errors.sh,lib/cron.sh,lib/doctor.sh,lib/cpu.sh,lib/watch.sh,tests/fixtures/**
+alwaysApply: false
+---
+
+# Logs and stats
+
+## Log files (Cloudways)
+
+| Role | Discovery (`lib/logs.sh`) | Notes |
+|------|---------------------------|-------|
+| Nginx access | `cw_logs_find_access` -> `nginx-app.status.log`, `nginx-app.access.log`, `backend_*access.log`, `static_*access.log` | Used by traffic, cron, doctor 5xx |
+| PHP access | `cw_logs_find_php_access` -> `php-app.access.log` | CPU/duration ranking in `cw slow` |
+| PHP slow | `cw_logs_find_slow` -> `php-app.slow.log` | Stack traces in `cw slow` |
+| Nginx error | `cw_logs_find_error` | `cw errors` |
+| WP debug | `cw_logs_find_debug` -> `public_html/wp-content/debug.log` | `cw errors` |
+
+`cw watch` tails **only the live active file** (no rotation). All analyzers use `cw_logs_sample_file`.
+
+## Rotation sampling
+
+`cw_logs_sample_file FILE LIMIT`:
+
+- Reads active file tail first, then rotated siblings (`*.1`, `*.2`, `*.gz`, `*-date`) until `LIMIT`
+- Sets `CW_LOGS_LAST_SAMPLE_META`; print via `cw_logs_sample_meta` after sampling
+- Helpers: `cw_logs_list_rotated`, `cw_logs_count_lines_total`, `cw_logs_read_stream` (handles `.gz`)
+
+**Sample limits** (`lib/common.sh`): `CW_TRAFFIC_SAMPLE_LINES=20000`, `CW_ERROR_SAMPLE_LINES=10000`, `CW_PHP_SAMPLE_LINES=20000`.
+
+| Command | Log | Limit constant |
+|---------|-----|----------------|
+| traffic, cron | nginx access | `CW_TRAFFIC_SAMPLE_LINES` |
+| errors, slow traces | error/debug/slow | `CW_ERROR_SAMPLE_LINES` |
+| slow PHP ranking | php-app.access | `CW_PHP_SAMPLE_LINES` |
+
+## Fingerprints
+
+Use `cw_logs_sample_line` (active tail, then newest rotated) -- **not** `_cw_tail_sample` on active only.
+
+- `cw_logs_fingerprint_combined` -> `combined` | `unknown` (nginx combined log)
+- `cw_logs_fingerprint_php_access` -> `php-fpm-cpu` | `unknown` (lines ending with `CPU% CPU% "/path"`)
+
+Traffic dies on non-`combined`. Slow skips CPU ranking on non-`php-fpm-cpu` but shows a sample line.
+
+## Path status (missing vs empty vs denied)
+
+`cw_logs_path_status PATH` -> `status|detail`:
+
+- `missing` -- file not found
+- `denied` -- exists, not readable by SSH user
+- `empty` -- readable, 0 lines in active + all rotations
+- `ok` -- has content (note when active empty but rotations have data)
+
+Use `_cw_log_path_issue` (`lib/common.sh`) for user-facing messages:
+
+- `missing` / `empty` -> `OBSERVED:` (not a permission problem)
+- `denied` -> `UNAVAILABLE TO SSH USER:`
+
+Check content with `cw_logs_path_has_content` before sampling. `cw_logs_list_label_path` for `cw apps -i` / log listings.
+
+## Diagnostic stat vocabulary
+
+Shareable commands use evidence tiers only:
+
+| Helper | Meaning |
+|--------|---------|
+| `_cw_observed` | Measured from logs or config |
+| `_cw_likely` | Reasonable inference |
+| `_cw_possible` | Hypothesis / next step |
+| `_cw_not_established` | Deliberately not claiming causation |
+| `_cw_unavailable` | Platform data SSH user cannot get (pool config, quotas) or denied read |
+
+Do not label empty logs as `UNAVAILABLE TO SSH USER` unless permission denied.
+
+## WP / app config (read-only)
+
+In `lib/apps.sh` only:
+
+- Domains: parse `conf/server.nginx` / `conf/server.apache` (`server_name`, `ServerName`, `ServerAlias`) -- never execute PHP
+- `cw_apps_read_disable_wp_cron` -- grep `wp-config.php` for `DISABLE_WP_CRON`
+- WP-CLI: show first error line on failure (`cw cron`); stderr is not hidden from operator context
+
+## Tests
+
+Add fixtures under `tests/fixtures/` and assertions in `tests/run-tests.sh`:
+
+- Fingerprint from empty active + rotated sibling
+- `cw_logs_path_status` for empty vs ok-with-rotations
+- Rotation sampling order (older rot + newer active = correct merge)
+
+Use `|| true` when capturing `cw_logs_path_status` exit code 2 (empty) under `set -e`.

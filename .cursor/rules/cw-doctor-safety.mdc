@@ -21,6 +21,17 @@ Read-only on apps; no root, no auto-fixes, no production file edits.
 - Toolkit errors: `_cw_toolkit_die` -> `cw-doctor: ...`
 - Reports: pipe through `_cw_redact_line` and `_cw_sanitize_report` (see `lib/collect.sh`)
 
+## Diagnostic evidence (shareable commands)
+
+Use tiered helpers from `lib/common.sh` only:
+
+- `OBSERVED:` -- measured (log counts, config grep, file status)
+- `LIKELY:` / `POSSIBLE:` -- inference or suggested follow-up
+- `NOT ESTABLISHED:` -- intentional non-claim (e.g. bot labeling, slow-trace causation)
+- `UNAVAILABLE TO SSH USER:` -- platform limits or **permission denied** only
+
+Log files: use `_cw_log_path_issue` + `cw_logs_path_status` (`lib/logs.sh`). Empty or missing logs are `OBSERVED`, not `UNAVAILABLE`. See `cw-doctor-logs-stats.mdc`.
+
 ## Hard rules
 
 - Never hardcode `/home/master`; use `$HOME` and `lib/platform.sh` / `lib/apps.sh`.

@@ -114,5 +114,16 @@ fbat() {
     target="${root}/${file#./}"
   fi
   [[ -f "$target" ]] || { echo "error: not a file: $target" >&2; return 1; }
-  "$bat_bin" --paging=always "$target"
+  if [[ -x "${_CW_SHELL_ROOT}/bin/cw-view" ]]; then
+    "${_CW_SHELL_ROOT}/bin/cw-view" "$target"
+  elif [[ -f "${_CW_SHELL_ROOT}/lib/common.sh" ]]; then
+    CW_ROOT="${_CW_SHELL_ROOT}"
+    CW_BIN_DIR="${_CW_SHELL_ROOT}/bin"
+    # shellcheck source=/dev/null
+    source "${_CW_SHELL_ROOT}/lib/common.sh"
+    _cw_view_file "$target"
+  else
+    LESS=FRX BAT_PAGER=cat PAGER=cat "$bat_bin" \
+      --no-config --color=always --style=numbers --paging=never --pager=cat "$target" | cat
+  fi
 }

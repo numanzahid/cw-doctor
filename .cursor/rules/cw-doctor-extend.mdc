@@ -6,68 +6,54 @@ alwaysApply: false
 
 # Extending cw-doctor
 
+See also: `cw-doctor-logs-stats.mdc` (logs/sampling/output), `cw-doctor-fzf-config.mdc` (pickers/shell).
+
 ## Add a `cw` subcommand (diagnostic)
 
 1. Create `lib/<name>.sh` with `cw_<name>_cmd` and `cw_<name>_help`.
 2. Load in `bin/cw`: `_cw_load_lib <name>`.
 3. Add `case` branch in `bin/cw` (diagnostic commands use `_cw_die`, not toolkit branding).
-4. Update `completions/cw.bash` if APP arg is needed (`cw apps --completion` lists folder id + all `server_name` / alias domains).
-5. Output: `_cw_section` / `_cw_observed` only. No `cw-doctor`, no `cw traffic` hints, no install paths.
-6. Optional: fixture under `tests/fixtures/` + assertion in `tests/run-tests.sh`.
+4. Update `completions/cw.bash` if APP arg is needed.
+5. Output: `_cw_section` + evidence helpers (`_cw_observed`, `_cw_likely`, `_cw_not_established`). No `cw-doctor`, no install paths in shareable output.
+6. Optional APP: `cw_apps_require_app` (app required) or `cw_apps_pick_with_scope` (server-wide allowed).
+7. Log analysis: use `cw_logs_sample_file` + `cw_logs_path_status` / `_cw_log_path_issue` (see logs-stats rule).
+8. Fixture + assertion in `tests/run-tests.sh` when behavior is non-trivial.
 
 ## App discovery (Cloudways)
 
-All app logic lives in `lib/apps.sh`:
+All app logic in `lib/apps.sh`:
 
 - List: scan `$HOME/applications/*/`
-- Primary URL: parse `conf/server.nginx` / `conf/server.apache` `server_name` (never execute PHP)
-- Resolve APP by folder id or exact domain alias via `cw_apps_resolve`
-- WordPress detect: `wp-config.php` / `wp-content` under `public_html`
+- URLs: `conf/server.nginx` / `conf/server.apache` only (never execute PHP)
+- Resolve: folder id or exact domain via `cw_apps_resolve`
+- WordPress: `wp-config.php` or `wp-content` under `public_html`
+- Do not hardcode client domains or vendor cache paths; discover under `wp-content`
 
-Do not hardcode client domains or extra vendor cache paths. Discover under `public_html` / `wp-content`.
+## Add a bundled tool (rg, lazygit, fzf, ...)
 
-## Add a bundled tool (rg, lazygit, ...)
+1. Add name to `manifest/tools.list`.
+2. In `lib/tools.sh` `cw_tools_install_all`, call `cw_tools_install_github` or custom installer.
+3. Wrapper in `bin/<name>` via `cw_tools_write_wrapper`.
+4. `cw_state_record tool "<name>" "<version>"` inside installers.
+5. Verify: `cw status`; binary `--version` / `-V`.
 
-1. Add name to `manifest/tools.list` (one per line).
-2. In `lib/tools.sh` `cw_tools_install_all`, call `cw_tools_install_github` or add installer (e.g. tmux deb).
-3. Wrapper lands in `bin/<name>` via `cw_tools_write_wrapper`.
-4. `cw_state_record tool "<name>" "<version>"` is already called inside installers.
-5. Verify: `cw status` lists tool OK; binary runs with `--version` or `-V` (tmux).
-
-Tools are removed only by `uninstall.sh --purge` (entire `$CW_ROOT`), not by `cw_state_reverse`.
+Tools removed only by `uninstall.sh --purge`, not `cw_state_reverse`.
 
 ## Install from a clone
 
-`install.sh` **moves** the clone directory to `~/.local/opt/cw-doctor` (including `.git`), then deletes the clone path. Preserves existing `.state/`, `runtime/`, `tools/` on reinstall.
+`install.sh` moves clone to `~/.local/opt/cw-doctor` (includes `.git`), removes clone path.
 
-- Staged relocate with rollback on failure (never leaves a half-moved tree)
-- Install continues in the same shell after move (no `exec`; does not depend on the clone path still existing)
-- Clone anywhere, run `./install.sh` once; no leftover `~/cw-doctor`
-- Reinstall from `${CW_ROOT}/install.sh` anytime
-- Updates: `cw update` runs `git pull --ff-only` in `$CW_ROOT` when `.git` exists
+- Staged relocate with rollback; same shell after move (no `exec`)
+- Preserves `.state/`, `runtime/`, `tools/` on reinstall
+- Updates: `cw update` -> `git pull --ff-only` when `.git` exists
 
 ## `bin/` layout
 
 - `bin/cw` = dispatcher only
-- Other `bin/*` = tool wrappers (exec upstream binary); not `cw` subcommands
+- Other `bin/*` = tool wrappers (exec upstream); not `cw` subcommands
 
-## Shell navigation
+## Interactive entry points
 
-`config/functions.sh` defines `cda`, `cdapp`, `cdlogs`, `cgo`, `fcd`, `fnvim`, `fbat` (sourced from `config/shell.sh`).
-
-`config/shell.sh` runs `fzf --bash` for Ctrl+R fuzzy history (and other fzf keybindings).
-
-## Interactive fzf menu
-
-- Bare `cw` or `cw menu` -> `cw_menu_cmd` in `lib/pick.sh`
-- All pickers live in `lib/pick.sh` (`cw_pick_*`, `cw_apps_pick_*`, `cw_apps_require_app`)
-- Commands with optional APP call `cw_apps_require_app` or `cw_apps_pick_with_scope`
-- New commands: `logs`, `reports`, `go`, `wp`
-
-## fzf usage
-
-Bundled on PATH. Used for app/command/log/report/path pickers. Pipe data on stdin; use `2>/dev/tty` when stdout is captured. Never `0</dev/tty` on stdin (drops piped list).
-
-## Log sampling
-
-`cw_logs_sample_file` reads the active log plus rotated siblings (`*.1`, `*.2`, `*.gz`, `*-date`) newest-first until the sample limit. Used by traffic, cron, errors, slow, and doctor 5xx checks. `cw watch` still tails only the live active file.
+- Bare `cw` / `cw menu` -> `cw_menu_cmd` in `lib/pick.sh`
+- Omit APP on most diagnostics -> fzf app picker (domain-labeled)
+- Shell: `config/shell.sh` + `config/functions.sh` (`cda`, `fcd`, `fnvim`, `fbat`, Ctrl+R via `fzf --bash`)

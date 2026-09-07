@@ -1,0 +1,72 @@
+---
+description: fzf pickers, shell integration, completions, and bundled config files
+globs: lib/pick.sh,config/**,completions/**,lib/apps.sh
+alwaysApply: false
+---
+
+# fzf and shell config
+
+## Picker library (`lib/pick.sh`)
+
+All interactive UI lives here. Load via `bin/cw` -> `_cw_load_lib pick`.
+
+| Function | Purpose |
+|----------|---------|
+| `cw_pick_fzf_binary` | Bundled `$CW_BIN_DIR/fzf`, else system `fzf` |
+| `cw_pick_run_fzf` | Run fzf; use `2>/dev/tty` when stdout is captured (command substitution) |
+| `cw_pick_labeled` | Key + description columns (preferred over tab-delimited lists) |
+| `cw_pick_lines` | Generic list picker with field mode (`first`, `last`, `tab1`, ...) |
+| `cw_apps_pick_interactive` | Domain-labeled app list |
+| `cw_apps_require_app` | Use APP arg or fzf-pick app |
+| `cw_apps_pick_with_scope` | App or **server-wide** (doctor, cpu, disk, collect) |
+| `cw_pick_command` | Bare `cw` / `cw menu` launcher |
+| `cw_pick_watch_mode` | watch modes: all, access, php, errors, slow |
+| `cw_pick_log_file` | `cw logs` file picker under `logs/` |
+| `cw_pick_report_dir` | `cw reports` past collect bundles |
+
+**fzf rules:**
+
+- Pipe options on stdin; never `0</dev/tty` on stdin (drops the piped list)
+- When capturing picker output: `picked="$(... | cw_pick_run_fzf ...)"` with `2>/dev/tty` inside `cw_pick_run_fzf`
+- Non-interactive fallback: numbered list + `cw_pick_fallback_read` (no fzf required)
+- `cw_pick_require_interactive` when TTY required; `_cw_is_interactive` checks `-t 0`
+
+## Shell integration (`config/`)
+
+Installed via managed block in `~/.bash_aliases` -> `config/shell.sh`:
+
+| File | Role |
+|------|------|
+| `config/shell.sh` | PATH (`$CW_ROOT/bin`), `fzf --bash` (Ctrl+R), sources aliases + functions + completions |
+| `config/functions.sh` | `cda`, `cdapp`, `cdlogs`, `cgo`, `fcd`, `fnvim`, `fbat` |
+| `config/aliases.sh` | Optional short aliases |
+| `config/inputrc` | Optional readline tweaks |
+| `config/tmux.conf` | Optional tmux config reference |
+
+Shell helpers use `_CW_SHELL_ROOT` (`~/.local/opt/cw-doctor`) and `_cw_shell_bin` (bundled tool, else PATH).
+
+- `cda` / `cdapp` / `cdlogs` -> `cw path` (with `--pick`, `--app`, `--logs`)
+- `fcd` / `fnvim` / `fbat` -> `fd` + `fzf` (+ `bat` preview in `fbat` picker only)
+- File output: `bin/cw-view` / `_cw_view_file` (`bat --no-config --paging=never --pager=cat | cat`) for `cw logs`, `cw reports --open`, `fbat`
+- Tab completion: `completions/cw.bash` (`cw apps --completion` for domains)
+
+## App labels in pickers
+
+Display **primary domain** from `cw_apps_primary_url`, not folder id alone. Resolve user input via `cw_apps_resolve` (id or any `server_name` alias). Completion lists folder id + all domains.
+
+## Adding a new fzf flow
+
+1. Add `cw_pick_*` in `lib/pick.sh` (use `cw_pick_labeled` for command-style menus)
+2. Call from `cw_<cmd>_cmd` when arg omitted and `_cw_is_interactive`
+3. Wire into `cw_pick_command` / `cw_menu_cmd` if it is a top-level command
+4. Update `completions/cw.bash` if new APP arg pattern
+5. Test in non-TTY mode (should fail clearly or skip picker)
+
+## Runtime config (not shell)
+
+| Path | Use |
+|------|-----|
+| `config/crawlers.json` | Traffic crawler UA patterns (`lib/traffic.sh`) |
+| `manifest/tools.list` | Bundled CLI tools (`lib/tools.sh`) |
+
+Fetched/installed at setup; recorded in `install-state` as `file` / `tool` (purge-only removal).

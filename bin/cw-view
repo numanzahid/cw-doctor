@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Print a file with bat highlighting, never through a pager (SSH copy/paste friendly).
+set -euo pipefail
+
+CW_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/common.sh
+source "${CW_ROOT}/lib/common.sh"
+
+[[ $# -eq 1 ]] || _cw_die "usage: cw-view FILE"
+
+_cw_view_file "$1"

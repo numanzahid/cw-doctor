@@ -67,7 +67,7 @@ _cw_install_verify_root() {
   local root="$1"
   local label="$2"
   local f
-  for f in install.sh uninstall.sh lib/common.sh bin/cw; do
+  for f in install.sh uninstall.sh lib/common.sh bin/cw bin/cw-view; do
     if [[ ! -e "${root}/${f}" ]]; then
       echo "cw-doctor: ${label} incomplete at ${root} (missing ${f})" >&2
       exit 1
@@ -181,7 +181,7 @@ cw_state_migrate_managed_block "$CW_ALIASES_FILE"
 cw_state_safe_symlink "${CW_ROOT}/config/tmux.conf" "${HOME}/.tmux.conf" || true
 cw_state_safe_symlink "${CW_ROOT}/config/inputrc" "${HOME}/.inputrc" || true
 
-chmod +x "${CW_ROOT}/bin/cw" "${CW_ROOT}/uninstall.sh" 2>/dev/null || true
+chmod +x "${CW_ROOT}/bin/cw" "${CW_ROOT}/bin/cw-view" "${CW_ROOT}/uninstall.sh" 2>/dev/null || true
 
 cw_tools_install_all
 cw_tools_fetch_crawlers

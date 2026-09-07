@@ -1,5 +1,8 @@
 PASS: access fingerprint
 PASS: php-app fingerprint
+PASS: php-app fingerprint from rotated file when active empty
+PASS: php-app path status when rotated has lines
+PASS: php-app path status when truly empty
 PASS: cw path resolves domain
 PASS: log sample includes rotated files
 SKIP: shellcheck not installed

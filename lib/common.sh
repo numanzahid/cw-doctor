@@ -18,6 +18,37 @@ CW_ALIASES_FILE="${HOME}/.bash_aliases"
 CW_TRAFFIC_SAMPLE_LINES=20000
 CW_ERROR_SAMPLE_LINES=10000
 CW_PHP_SAMPLE_LINES=20000
+CW_BAT_PAGING=never
+
+# Print a file to stdout (no pager) for easy copy/paste in SSH sessions.
+_cw_view_file() {
+  local file="$1" bat_bin=""
+  [[ -r "$file" ]] || _cw_die "cannot read file: $file"
+  if [[ "$file" == *.gz ]]; then
+    if command -v zcat >/dev/null 2>&1; then
+      zcat -- "$file"
+    elif command -v gzip >/dev/null 2>&1; then
+      gzip -dc -- "$file"
+    else
+      _cw_die "cannot read gzip file (zcat/gzip missing): $file"
+    fi
+    return 0
+  fi
+  if [[ -x "${CW_BIN_DIR}/bat" ]]; then
+    bat_bin="${CW_BIN_DIR}/bat"
+  elif command -v bat >/dev/null 2>&1; then
+    bat_bin="$(command -v bat)"
+  fi
+  if [[ -n "$bat_bin" ]]; then
+    # --no-config: ignore ~/.config/bat/config (often sets --paging=always).
+    # Final pipe to cat: stdout is never a TTY, so bat cannot open less.
+    LESS=FRX BAT_PAGER=cat PAGER=cat "$bat_bin" \
+      --no-config --color=always --style=numbers \
+      --paging=never --pager=cat "$file" | cat
+  else
+    cat -- "$file"
+  fi
+}
 
 _cw_diag_die() {
   echo "error: $*" >&2
@@ -189,7 +220,7 @@ Server diagnostics (shareable output; omit APP to pick interactively):
   cw traffic [APP]     Access log analysis
   cw slow [APP]        PHP slow log analysis
   cw watch [APP] [mode] Live log tail
-  cw logs [APP]        Browse log files (bat/tail)
+  cw logs [APP]        Browse log files (bat/cat, no pager)
   cw errors [APP]      Error log summary
   cw cron [APP]        WP cron activity
   cw disk [APP]        Disk usage

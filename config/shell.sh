@@ -1,10 +1,10 @@
 # Shell integration for cw diagnostics
 _CW_SHELL_ROOT="${HOME}/.local/opt/cw-doctor"
-export PATH="${_CW_SHELL_ROOT}/bin:${PATH}"
+export PATH="${_CW_SHELL_ROOT}/bin:${_CW_SHELL_ROOT}/shims:${PATH}"
 
-if [[ -x "${_CW_SHELL_ROOT}/bin/fzf" ]]; then
+if [[ -x "${_CW_SHELL_ROOT}/shims/fzf" ]]; then
   # shellcheck disable=SC2016
-  eval "$("${_CW_SHELL_ROOT}/bin/fzf" --bash)"
+  eval "$("${_CW_SHELL_ROOT}/shims/fzf" --bash)"
 elif command -v fzf >/dev/null 2>&1; then
   # shellcheck disable=SC2016
   eval "$(fzf --bash)"

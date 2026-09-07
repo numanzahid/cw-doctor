@@ -53,8 +53,8 @@ cw_status_cmd() {
   fi
   cw_tools_status
 
-  if [[ -f "${CW_ROOT}/config/crawlers.json" ]]; then
-    _cw_toolkit_label "crawler list" "OK (${CW_ROOT}/config/crawlers.json)"
+  if [[ -f "$CW_CRAWLERS_FILE" ]]; then
+    _cw_toolkit_label "crawler list" "OK (${CW_CRAWLERS_FILE})"
   else
     _cw_toolkit_label "crawler list" "MISSING"
   fi

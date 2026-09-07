@@ -103,49 +103,81 @@ cw_tools_install_tmux() {
   cw_state_record tool "$name" "system-deb"
 }
 
+cw_tools_shim_path() {
+  printf '%s/%s' "$CW_SHIMS_DIR" "$1"
+}
+
+cw_tools_resolve_shim() {
+  local name="$1" shim
+  shim="$(cw_tools_shim_path "$name")"
+  [[ -x "$shim" ]] && printf '%s' "$shim"
+}
+
+# Remove legacy generated wrappers from bin/ (pre-shims layout).
+cw_tools_migrate_legacy_layout() {
+  local name list="${CW_ROOT}/manifest/tools.list"
+  local legacy_crawlers="${CW_ROOT}/config/crawlers.json"
+  mkdir -p "$CW_SHIMS_DIR" "$CW_STATE_DIR"
+  [[ -f "$list" ]] || return 0
+  while IFS= read -r name; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    if [[ -f "${CW_BIN_DIR}/${name}" ]]; then
+      rm -f "${CW_BIN_DIR}/${name}"
+    fi
+  done < "$list"
+  if [[ -f "$legacy_crawlers" && ! -f "$CW_CRAWLERS_FILE" ]]; then
+    mv "$legacy_crawlers" "$CW_CRAWLERS_FILE"
+  elif [[ -f "$legacy_crawlers" ]]; then
+    rm -f "$legacy_crawlers"
+  fi
+}
+
 cw_tools_write_wrapper() {
   local name="$1" ver_dir="$2" bin_name="$3"
-  local wrapper="${CW_BIN_DIR}/${name}"
-  local binary="$(_cw_find_binary "$ver_dir" "$bin_name")"
+  local wrapper shim binary
+  shim="$(cw_tools_shim_path "$name")"
+  binary="$(_cw_find_binary "$ver_dir" "$bin_name")"
   [[ -n "$binary" ]] || _cw_toolkit_die "wrapper target missing: $name"
 
-  cat > "$wrapper" <<EOF
+  mkdir -p "$CW_SHIMS_DIR"
+  cat > "$shim" <<EOF
 #!/usr/bin/env bash
 exec "${binary}" "\$@"
 EOF
-  chmod +x "$wrapper"
+  chmod +x "$shim"
 }
 
 cw_tools_write_tmux_wrapper() {
   local ver_dir="$1"
-  local tmux_bin wrapper lib_paths
+  local tmux_bin shim lib_paths
   tmux_bin="$(find "$ver_dir" -type f -path '*/bin/tmux' 2>/dev/null | head -1)"
   lib_paths="$(find "$ver_dir" -type d -path '*/lib/x86_64-linux-gnu' 2>/dev/null | tr '\n' ':')"
   lib_paths="${lib_paths}$(find "$ver_dir" -type d -name lib 2>/dev/null | tr '\n' ':')"
-  wrapper="${CW_BIN_DIR}/tmux"
-  cat > "$wrapper" <<EOF
+  shim="$(cw_tools_shim_path tmux)"
+  mkdir -p "$CW_SHIMS_DIR"
+  cat > "$shim" <<EOF
 #!/usr/bin/env bash
 export LD_LIBRARY_PATH="${lib_paths}\${LD_LIBRARY_PATH:-}"
 exec "${tmux_bin}" "\$@"
 EOF
-  chmod +x "$wrapper"
+  chmod +x "$shim"
 }
 
 cw_tools_write_nvim_wrapper() {
   local ver_dir="$1"
-  local nvim_bin wrapper runtime
+  local nvim_bin shim runtime
   nvim_bin="$(_cw_find_binary "$ver_dir" nvim)"
   runtime="${CW_ROOT}/runtime/nvim"
-  wrapper="${CW_BIN_DIR}/nvim"
-  mkdir -p "${runtime}/data" "${runtime}/state" "${runtime}/cache"
-  cat > "$wrapper" <<EOF
+  shim="$(cw_tools_shim_path nvim)"
+  mkdir -p "${runtime}/data" "${runtime}/state" "${runtime}/cache" "$CW_SHIMS_DIR"
+  cat > "$shim" <<EOF
 #!/usr/bin/env bash
 export XDG_DATA_HOME="${runtime}/data"
 export XDG_STATE_HOME="${runtime}/state"
 export XDG_CACHE_HOME="${runtime}/cache"
 exec "${nvim_bin}" "\$@"
 EOF
-  chmod +x "$wrapper"
+  chmod +x "$shim"
 }
 
 cw_tools_install_nvim() {
@@ -179,7 +211,7 @@ cw_tools_all_present() {
   [[ -f "$list" ]] || return 1
   while IFS= read -r name; do
     [[ -z "$name" || "$name" =~ ^# ]] && continue
-    [[ -x "${CW_BIN_DIR}/${name}" ]] || return 1
+    [[ -x "$(cw_tools_shim_path "$name")" ]] || return 1
   done < "$list"
   return 0
 }
@@ -197,7 +229,8 @@ cw_tools_refresh_needed() {
 
 cw_tools_install_all() {
   local force="${1:-0}"
-  mkdir -p "$CW_TOOLS_DIR" "$CW_BIN_DIR"
+  cw_tools_migrate_legacy_layout
+  mkdir -p "$CW_TOOLS_DIR" "$CW_SHIMS_DIR" "$CW_BIN_DIR"
   if ! cw_tools_refresh_needed "$force"; then
     local last
     last="$(cw_state_tools_last_install_read)"
@@ -218,8 +251,9 @@ cw_tools_install_all() {
 
 cw_tools_check_one() {
   local name="$1"
-  local wrapper="${CW_BIN_DIR}/${name}"
-  if [[ ! -x "$wrapper" ]]; then
+  local wrapper
+  wrapper="$(cw_tools_resolve_shim "$name")"
+  if [[ -z "$wrapper" ]]; then
     echo "$name: MISSING"
     return 1
   fi
@@ -241,13 +275,13 @@ cw_tools_status() {
 }
 
 cw_tools_fetch_crawlers() {
-  local dest="${CW_ROOT}/config/crawlers.json"
+  local dest="$CW_CRAWLERS_FILE"
   local url="https://raw.githubusercontent.com/monperrus/crawler-user-agents/master/crawler-user-agents.json"
-  mkdir -p "${CW_ROOT}/config"
+  cw_state_init
   if _cw_download "$url" "${dest}.tmp" 2>/dev/null; then
     mv "${dest}.tmp" "$dest"
-    cw_state_record file "$dest" crawlers
+    cw_state_log "crawler list refreshed"
   else
-    _cw_toolkit_warn "could not refresh crawler list; using bundled copy if present"
+    _cw_toolkit_warn "could not refresh crawler list; using existing copy if present"
   fi
 }

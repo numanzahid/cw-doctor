@@ -7,7 +7,9 @@ fi
 
 CW_STATE_DIR="${CW_ROOT}/.state"
 CW_BIN_DIR="${CW_ROOT}/bin"
+CW_SHIMS_DIR="${CW_ROOT}/shims"
 CW_TOOLS_DIR="${CW_ROOT}/tools"
+CW_CRAWLERS_FILE="${CW_STATE_DIR}/crawlers.json"
 CW_MANAGED_BEGIN='# >>> cw >>>'
 CW_MANAGED_END='# <<< cw <<<'
 CW_MANAGED_BEGIN_LEGACY='# >>> cw-doctor >>>'
@@ -35,8 +37,8 @@ _cw_view_file() {
     fi
     return 0
   fi
-  if [[ -x "${CW_BIN_DIR}/bat" ]]; then
-    bat_bin="${CW_BIN_DIR}/bat"
+  if [[ -x "${CW_SHIMS_DIR}/bat" ]]; then
+    bat_bin="${CW_SHIMS_DIR}/bat"
   elif command -v bat >/dev/null 2>&1; then
     bat_bin="$(command -v bat)"
   fi

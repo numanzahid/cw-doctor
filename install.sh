@@ -17,7 +17,7 @@ CW_INSTALL_PRESERVED=""
 _cw_install_preserve_dirs() {
   local dest="$1" tmp="$2"
   local keep
-  for keep in .state runtime tools; do
+  for keep in .state runtime tools shims; do
     if [[ -d "${dest}/${keep}" ]]; then
       mv "${dest}/${keep}" "${tmp}/"
     fi
@@ -27,7 +27,7 @@ _cw_install_preserve_dirs() {
 _cw_install_restore_preserved() {
   local dest="$1" tmp="$2"
   local keep
-  for keep in .state runtime tools; do
+  for keep in .state runtime tools shims; do
     if [[ -d "${tmp}/${keep}" ]]; then
       mv "${tmp}/${keep}" "${dest}/"
     fi

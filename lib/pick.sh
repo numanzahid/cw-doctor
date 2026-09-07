@@ -2,8 +2,8 @@
 # fzf pickers and cw command menu
 
 cw_pick_fzf_binary() {
-  if [[ -x "${CW_BIN_DIR}/fzf" ]]; then
-    printf '%s' "${CW_BIN_DIR}/fzf"
+  if [[ -x "${CW_SHIMS_DIR}/fzf" ]]; then
+    printf '%s' "${CW_SHIMS_DIR}/fzf"
     return 0
   fi
   if command -v fzf >/dev/null 2>&1; then

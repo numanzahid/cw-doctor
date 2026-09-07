@@ -4,6 +4,10 @@ _CW_SHELL_ROOT="${HOME}/.local/opt/cw-doctor"
 
 _cw_shell_bin() {
   local name="$1"
+  if [[ -x "${_CW_SHELL_ROOT}/shims/${name}" ]]; then
+    printf '%s' "${_CW_SHELL_ROOT}/shims/${name}"
+    return 0
+  fi
   if [[ -x "${_CW_SHELL_ROOT}/bin/${name}" ]]; then
     printf '%s' "${_CW_SHELL_ROOT}/bin/${name}"
     return 0

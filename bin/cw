@@ -50,8 +50,9 @@ case "$cmd" in
   uninstall) exec "${CW_ROOT}/uninstall.sh" "$@" ;;
   help|-h|--help) _cw_help_global ;;
   *)
-    if [[ -x "${CW_BIN_DIR}/${cmd}" ]]; then
-      exec "${CW_BIN_DIR}/${cmd}" "$@"
+    shim="$(cw_tools_resolve_shim "$cmd")"
+    if [[ -n "$shim" ]]; then
+      exec "$shim" "$@"
     fi
     _cw_toolkit_die "unknown command: $cmd (try: cw help)"
     ;;

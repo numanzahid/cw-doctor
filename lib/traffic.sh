@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 _cw_traffic_crawler_file() {
-  local f="${CW_ROOT}/config/crawlers.json"
-  [[ -f "$f" ]] && printf '%s' "$f"
+  [[ -f "$CW_CRAWLERS_FILE" ]] && printf '%s' "$CW_CRAWLERS_FILE"
 }
 
 cw_traffic_cmd() {

@@ -103,7 +103,7 @@ if grep -q 'cw-doctor' "${HOME}/.bash_aliases" 2>/dev/null; then ok "bash_aliase
 [[ -L "${HOME}/.tmux.conf" ]] && ok ".tmux.conf symlink" || skip ".tmux.conf symlink (may pre-exist)"
 [[ -L "${HOME}/.inputrc" ]] && ok ".inputrc symlink" || skip ".inputrc symlink"
 [[ -L "${HOME}/.local/bin/cw" ]] && ok "~/.local/bin/cw symlink" || bad "~/.local/bin/cw symlink"
-[[ -f "${ROOT}/config/crawlers.json" ]] && ok "crawlers.json" || bad "crawlers.json"
+[[ -f "${ROOT}/.state/crawlers.json" ]] && ok "crawlers.json" || bad "crawlers.json"
 
 section "SUMMARY"
 echo "PASS=$pass FAIL=$fail SKIP=$skip"

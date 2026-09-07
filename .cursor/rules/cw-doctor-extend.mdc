@@ -33,7 +33,7 @@ All app logic in `lib/apps.sh`:
 
 1. Add name to `manifest/tools.list`.
 2. In `lib/tools.sh` `cw_tools_install_all`, call `cw_tools_install_github` or custom installer.
-3. Wrapper in `bin/<name>` via `cw_tools_write_wrapper`.
+3. Wrapper lands in `shims/<name>` via `cw_tools_write_wrapper` (not `bin/`).
 4. `cw_state_record tool "<name>" "<version>"` inside installers.
 5. Verify: `cw status`; binary `--version` / `-V`.
 
@@ -49,10 +49,12 @@ Tools removed only by `uninstall.sh --purge`, not `cw_state_reverse`.
 - `cw update [--force]` = git pull + `cw_doctor_sync` (single maintenance command)
 - Bundled tools: skip re-download within 7 days unless `cw update --force`
 
-## `bin/` layout
+## `bin/` and `shims/` layout
 
-- `bin/cw` = dispatcher only
-- Other `bin/*` = tool wrappers (exec upstream); not `cw` subcommands
+- `bin/cw`, `bin/cw-view` = tracked repo scripts
+- `shims/*` = generated tool wrappers (`CW_SHIMS_DIR`, gitignored); PATH includes `bin` then `shims`
+- Downloaded binaries live under `tools/` (gitignored)
+- Runtime data (crawler list, install timestamps) under `.state/` (gitignored)
 
 ## Interactive entry points
 

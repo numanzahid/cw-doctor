@@ -87,8 +87,9 @@ TOOLS_TEST_HOME="$(mktemp -d)"
 export CW_STATE_DIR="${TOOLS_TEST_HOME}/.state"
 export CW_ROOT="${TOOLS_TEST_HOME}/cw"
 export CW_BIN_DIR="${CW_ROOT}/bin"
+export CW_SHIMS_DIR="${CW_ROOT}/shims"
 export CW_TOOLS_DIR="${CW_ROOT}/tools"
-mkdir -p "$CW_BIN_DIR" "${CW_ROOT}/manifest" "$CW_STATE_DIR"
+mkdir -p "$CW_BIN_DIR" "$CW_SHIMS_DIR" "${CW_ROOT}/manifest" "$CW_STATE_DIR"
 cp "${ROOT}/manifest/tools.list" "${CW_ROOT}/manifest/tools.list"
 if cw_tools_refresh_needed 0; then
   echo "PASS: tools refresh needed when never installed"
@@ -101,8 +102,8 @@ printf '%s\n' "$ts" > "$(cw_state_tools_last_install_path)"
 name=""
 while IFS= read -r name; do
   [[ -z "$name" || "$name" =~ ^# ]] && continue
-  printf '#!/bin/sh\n' > "${CW_BIN_DIR}/${name}"
-  chmod +x "${CW_BIN_DIR}/${name}"
+  printf '#!/bin/sh\n' > "$(cw_tools_shim_path "$name")"
+  chmod +x "$(cw_tools_shim_path "$name")"
 done < "${CW_ROOT}/manifest/tools.list"
 if cw_tools_refresh_needed 0; then
   echo "FAIL: tools refresh should skip when fresh and present" >&2
@@ -120,6 +121,7 @@ rm -rf "$TOOLS_TEST_HOME"
 export CW_ROOT="$ROOT"
 export CW_STATE_DIR="${ROOT}/.state"
 export CW_BIN_DIR="${ROOT}/bin"
+export CW_SHIMS_DIR="${ROOT}/shims"
 export CW_TOOLS_DIR="${ROOT}/tools"
 unset CW_STATE_DIR 2>/dev/null || true
 

@@ -24,6 +24,19 @@ Install location: `~/.local/opt/cw-doctor` (clone directory is removed; no lefto
 
 Re-run `./install.sh` only to repair shell integration (no git pull).
 
+## Install layout
+
+```
+~/.local/opt/cw-doctor/     git checkout (source only)
+  bin/cw, bin/cw-view       tracked scripts
+  lib/, config/, ...        tracked source
+  shims/                    generated tool wrappers (gitignored)
+  tools/                    downloaded binaries (gitignored)
+  .state/                   install state, reports, crawlers.json (gitignored)
+```
+
+`git status` stays clean after install/update unless you edit tracked source files.
+
 ## App navigation
 
 Cloudways app folders use opaque ids (`~/applications/kuwzfqjbxq`). Jump by **domain** instead:

@@ -174,8 +174,36 @@ cw_tools_install_nvim() {
   cw_state_record tool nvim "${version:-latest}"
 }
 
+cw_tools_all_present() {
+  local name list="${CW_ROOT}/manifest/tools.list"
+  [[ -f "$list" ]] || return 1
+  while IFS= read -r name; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    [[ -x "${CW_BIN_DIR}/${name}" ]] || return 1
+  done < "$list"
+  return 0
+}
+
+# Return 0 when bundled binaries should be downloaded (missing, stale, or --force).
+cw_tools_refresh_needed() {
+  local force="${1:-0}"
+  [[ "$force" == 1 ]] && return 0
+  cw_tools_all_present || return 0
+  cw_state_tools_last_install_read >/dev/null || return 0
+  local age
+  age="$(cw_state_tools_age_days)" || return 0
+  [[ "$age" -ge "${CW_TOOLS_REFRESH_DAYS}" ]]
+}
+
 cw_tools_install_all() {
+  local force="${1:-0}"
   mkdir -p "$CW_TOOLS_DIR" "$CW_BIN_DIR"
+  if ! cw_tools_refresh_needed "$force"; then
+    local last
+    last="$(cw_state_tools_last_install_read)"
+    _cw_toolkit_info "bundled tools fresh (last install ${last}); skipping download (use --force to refresh)"
+    return 0
+  fi
   cw_tools_install_github rg BurntSushi/ripgrep 'x86_64.*linux.*tar\.gz' rg
   cw_tools_install_github fd sharkdp/fd 'x86_64.*linux.*tar\.gz' fd
   cw_tools_install_github fzf junegunn/fzf 'linux_amd64\.tar\.gz' fzf
@@ -185,6 +213,7 @@ cw_tools_install_all() {
   cw_tools_install_github lazygit jesseduffield/lazygit 'linux_x86_64\.tar\.gz' lazygit
   cw_tools_install_tmux
   cw_tools_install_nvim
+  cw_state_tools_mark_installed
 }
 
 cw_tools_check_one() {

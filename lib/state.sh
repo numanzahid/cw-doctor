@@ -5,6 +5,10 @@ CW_STATE_FILE="${CW_STATE_DIR}/install-state"
 CW_INSTALL_LOG="${CW_STATE_DIR}/install.log"
 CW_INSTALL_LOCK="${CW_STATE_DIR}/install.lock"
 
+cw_state_tools_last_install_path() {
+  printf '%s/tools-last-install' "$CW_STATE_DIR"
+}
+
 cw_state_init() {
   mkdir -p "${CW_STATE_DIR}" "${CW_STATE_DIR}/backups" "${CW_STATE_DIR}/reports"
   chmod 700 "${CW_STATE_DIR}" 2>/dev/null || true
@@ -41,6 +45,38 @@ cw_state_acquire_lock() {
 
 cw_state_release_lock() {
   rm -f "$CW_INSTALL_LOCK"
+}
+
+cw_state_tools_last_install_read() {
+  local path
+  cw_state_init
+  path="$(cw_state_tools_last_install_path)"
+  [[ -f "$path" ]] || return 1
+  tr -d '[:space:]' < "$path"
+}
+
+cw_state_tools_mark_installed() {
+  local ts path
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  cw_state_init
+  path="$(cw_state_tools_last_install_path)"
+  printf '%s\n' "$ts" > "$path"
+  chmod 600 "$path" 2>/dev/null || true
+  cw_state_log "bundled tools installed ${ts}"
+}
+
+cw_state_tools_age_days() {
+  local last now ts age_secs
+  last="$(cw_state_tools_last_install_read)" || return 1
+  if ! ts="$(date -u -d "$last" +%s 2>/dev/null)"; then
+    return 1
+  fi
+  now="$(date -u +%s)"
+  age_secs=$((now - ts))
+  if [[ "$age_secs" -lt 0 ]]; then
+    return 1
+  fi
+  printf '%s' "$(( age_secs / 86400 ))"
 }
 
 cw_state_backup_file() {

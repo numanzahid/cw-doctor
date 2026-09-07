@@ -168,39 +168,51 @@ source "${CW_ROOT}/lib/common.sh"
 _cw_load_lib platform
 _cw_load_lib state
 _cw_load_lib tools
+_cw_load_lib update
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      cat <<'EOF'
+cw-doctor first-time install
+
+Usage: ./install.sh
+
+  Moves this repo to ~/.local/opt/cw-doctor (once), sets up shell integration,
+  and installs bundled tools.
+
+  After install, use cw update for all ongoing maintenance (git pull, config,
+  tools). Use cw update --force to re-download bundled tools.
+
+  Re-run ./install.sh to repair shell hooks without git pull.
+EOF
+      exit 0
+      ;;
+    --force)
+      echo "cw-doctor: install.sh no longer accepts --force" >&2
+      echo "cw-doctor: after install, run: cw update --force" >&2
+      echo "cw-doctor: (or: ${TARGET_ROOT}/bin/cw update --force before cw is on PATH)" >&2
+      exit 1
+      ;;
+    *)
+      echo "cw-doctor: unknown option: $1 (try: ./install.sh --help)" >&2
+      exit 1
+      ;;
+  esac
+done
 
 cw_state_acquire_lock
 trap cw_state_release_lock EXIT
 
 cw_state_log "install started in ${CW_ROOT}"
-cw_platform_preflight
-cw_state_init
-
-cw_state_ensure_managed_block "$CW_ALIASES_FILE" "${CW_ROOT}/config/shell.sh"
-cw_state_migrate_managed_block "$CW_ALIASES_FILE"
-cw_state_safe_symlink "${CW_ROOT}/config/tmux.conf" "${HOME}/.tmux.conf" || true
-cw_state_safe_symlink "${CW_ROOT}/config/inputrc" "${HOME}/.inputrc" || true
-
-chmod +x "${CW_ROOT}/bin/cw" "${CW_ROOT}/bin/cw-view" "${CW_ROOT}/uninstall.sh" 2>/dev/null || true
-
-cw_tools_install_all
-cw_tools_fetch_crawlers
-
-if [[ ! -L "${HOME}/.local/bin/cw" ]]; then
-  mkdir -p "${HOME}/.local/bin"
-  ln -sf "${CW_ROOT}/bin/cw" "${HOME}/.local/bin/cw"
-  cw_state_record local-bin-symlink "${HOME}/.local/bin/cw" "${CW_ROOT}/bin/cw"
-fi
-
+cw_doctor_sync 0
 cw_state_log "install finished"
+
 echo ""
 _cw_toolkit_info "installed to ${CW_ROOT}"
-_cw_toolkit_info "state directory ${CW_STATE_DIR}"
-if [[ -d "${CW_ROOT}/.git" ]]; then
-  _cw_toolkit_info "git repo present; run 'cw update' for git pull + tool refresh"
-fi
 _cw_toolkit_info "run: source ~/.bash_aliases  (or open a new shell)"
 _cw_toolkit_info "then: cw apps"
-_cw_toolkit_info "reinstall anytime: ${CW_ROOT}/install.sh"
+_cw_toolkit_info "ongoing updates: cw update  (cw update --force to refresh all tools)"
+_cw_toolkit_info "reload shell: source ~/.bash_aliases  (or open a new shell)"
 
 "${CW_ROOT}/bin/cw" status

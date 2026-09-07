@@ -19,6 +19,7 @@ CW_TRAFFIC_SAMPLE_LINES=20000
 CW_ERROR_SAMPLE_LINES=10000
 CW_PHP_SAMPLE_LINES=20000
 CW_BAT_PAGING=never
+CW_TOOLS_REFRESH_DAYS=7
 
 # Print a file to stdout (no pager) for easy copy/paste in SSH sessions.
 _cw_view_file() {
@@ -206,7 +207,7 @@ Interactive menu (fzf):
 
 Admin (install, paths, updates):
   cw status            Install health and paths
-  cw update            Manual update
+  cw update [--force]    Pull code and refresh install (--force re-downloads tools)
   cw path [APP]        Print app path (pick if APP omitted)
   cw uninstall         Reverse install (or uninstall.sh)
 

@@ -45,7 +45,9 @@ Tools removed only by `uninstall.sh --purge`, not `cw_state_reverse`.
 
 - Staged relocate with rollback; same shell after move (no `exec`)
 - Preserves `.state/`, `runtime/`, `tools/` on reinstall
-- Updates: `cw update` -> `git pull --ff-only` when `.git` exists
+- `install.sh` = first-time relocate + `cw_doctor_sync` (no git pull, no `--force`)
+- `cw update [--force]` = git pull + `cw_doctor_sync` (single maintenance command)
+- Bundled tools: skip re-download within 7 days unless `cw update --force`
 
 ## `bin/` layout
 

@@ -81,6 +81,48 @@ else
 fi
 rm -rf "$LOGDIR"
 
+_cw_load_lib state
+_cw_load_lib tools
+TOOLS_TEST_HOME="$(mktemp -d)"
+export CW_STATE_DIR="${TOOLS_TEST_HOME}/.state"
+export CW_ROOT="${TOOLS_TEST_HOME}/cw"
+export CW_BIN_DIR="${CW_ROOT}/bin"
+export CW_TOOLS_DIR="${CW_ROOT}/tools"
+mkdir -p "$CW_BIN_DIR" "${CW_ROOT}/manifest" "$CW_STATE_DIR"
+cp "${ROOT}/manifest/tools.list" "${CW_ROOT}/manifest/tools.list"
+if cw_tools_refresh_needed 0; then
+  echo "PASS: tools refresh needed when never installed"
+else
+  echo "FAIL: tools refresh needed when never installed" >&2
+  fail=1
+fi
+ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+printf '%s\n' "$ts" > "$(cw_state_tools_last_install_path)"
+name=""
+while IFS= read -r name; do
+  [[ -z "$name" || "$name" =~ ^# ]] && continue
+  printf '#!/bin/sh\n' > "${CW_BIN_DIR}/${name}"
+  chmod +x "${CW_BIN_DIR}/${name}"
+done < "${CW_ROOT}/manifest/tools.list"
+if cw_tools_refresh_needed 0; then
+  echo "FAIL: tools refresh should skip when fresh and present" >&2
+  fail=1
+else
+  echo "PASS: tools refresh skips when fresh and present"
+fi
+if cw_tools_refresh_needed 1; then
+  echo "PASS: tools refresh forced"
+else
+  echo "FAIL: tools refresh forced" >&2
+  fail=1
+fi
+rm -rf "$TOOLS_TEST_HOME"
+export CW_ROOT="$ROOT"
+export CW_STATE_DIR="${ROOT}/.state"
+export CW_BIN_DIR="${ROOT}/bin"
+export CW_TOOLS_DIR="${ROOT}/tools"
+unset CW_STATE_DIR 2>/dev/null || true
+
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck "${ROOT}"/lib/*.sh "${ROOT}"/bin/cw "${ROOT}"/install.sh "${ROOT}"/uninstall.sh && echo "PASS: shellcheck" || fail=1
 else

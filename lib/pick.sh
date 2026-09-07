@@ -220,7 +220,7 @@ cw_pick_command() {
       go "Jump path within an app" \
       wp "List WordPress plugins or themes" \
       status "Install health check" \
-      update "Manual update (git pull + tools)" \
+      update "Pull code and refresh install (--force re-downloads tools)" \
       help "Show command help")" || _cw_die "no command selected"
   else
     cat >&2 <<'EOF'

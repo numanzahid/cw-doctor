@@ -16,9 +16,13 @@ cw traffic <APP>
 
 Install location: `~/.local/opt/cw-doctor` (clone directory is removed; no leftover in `$HOME`).
 
-Reinstall or repair: `~/.local/opt/cw-doctor/install.sh`
+**First time:** `./install.sh` then `source ~/.bash_aliases`
 
-Updates: `cw update` (`git pull --ff-only` + refresh bundled tools).
+**After that:** `cw update` (pull code, refresh config, install tools if older than 7 days)
+
+**Refresh all tools:** `cw update --force`
+
+Re-run `./install.sh` only to repair shell integration (no git pull).
 
 ## App navigation
 
@@ -90,7 +94,7 @@ Omit APP on most commands to get an fzf picker (domain-labeled). For `doctor`, `
 | `cw go [APP]` | Pick path within an app |
 | `cw wp [APP]` | Pick plugin or theme directory |
 | `cw status` | Install health check |
-| `cw update` | Manual update (git pull + refresh tools) |
+| `cw update [--force]` | Pull code + refresh install (use daily; --force re-downloads tools) |
 | `cw uninstall` | Reverse install changes |
 
 ## Safety

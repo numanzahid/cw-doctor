@@ -5,4 +5,5 @@ PASS: php-app path status when rotated has lines
 PASS: php-app path status when truly empty
 PASS: cw path resolves domain
 PASS: log sample includes rotated files
-SKIP: shellcheck not installed
+PASS: tools refresh needed when never installed
+tests/run-tests.sh: line 100: /tmp/tmp.7oaZIXUJ9i/.state/tools-last-install: No such file or directory

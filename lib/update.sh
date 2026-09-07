@@ -85,11 +85,9 @@ cw_status_help() {
   echo "cw-doctor: install health, paths, and bundled tools."
 }
 
-_cw_update_git_dirty() {
+_cw_update_git_clean() {
   local repo="$1"
-  ! git -C "$repo" diff --quiet 2>/dev/null || return 0
-  ! git -C "$repo" diff --cached --quiet 2>/dev/null || return 0
-  return 1
+  git -C "$repo" diff --quiet 2>/dev/null && git -C "$repo" diff --cached --quiet 2>/dev/null
 }
 
 cw_update_git_pull() {
@@ -99,7 +97,7 @@ cw_update_git_pull() {
 
   [[ -d "${repo}/.git" ]] || return 0
 
-  if ! _cw_update_git_dirty "$repo"; then
+  if _cw_update_git_clean "$repo"; then
     _cw_toolkit_info "git pull --ff-only"
     git -C "$repo" pull --ff-only || _cw_toolkit_warn "git pull failed"
     return 0

@@ -125,6 +125,27 @@ export CW_SHIMS_DIR="${ROOT}/shims"
 export CW_TOOLS_DIR="${ROOT}/tools"
 unset CW_STATE_DIR 2>/dev/null || true
 
+_cw_load_lib update
+GIT_TEST_DIR="$(mktemp -d)"
+git init -q "$GIT_TEST_DIR"
+printf 'test\n' > "${GIT_TEST_DIR}/tracked.txt"
+git -C "$GIT_TEST_DIR" add tracked.txt
+git -C "$GIT_TEST_DIR" -c user.email=test@example.com -c user.name=test commit -q -m init
+if _cw_update_git_clean "$GIT_TEST_DIR"; then
+  echo "PASS: update git clean on clean tree"
+else
+  echo "FAIL: update git clean on clean tree" >&2
+  fail=1
+fi
+printf 'dirty\n' >> "${GIT_TEST_DIR}/tracked.txt"
+if ! _cw_update_git_clean "$GIT_TEST_DIR"; then
+  echo "PASS: update git clean on dirty tree"
+else
+  echo "FAIL: update git clean on dirty tree" >&2
+  fail=1
+fi
+rm -rf "$GIT_TEST_DIR"
+
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck "${ROOT}"/lib/*.sh "${ROOT}"/bin/cw "${ROOT}"/install.sh "${ROOT}"/uninstall.sh && echo "PASS: shellcheck" || fail=1
 else

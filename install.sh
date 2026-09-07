@@ -210,9 +210,8 @@ cw_state_log "install finished"
 
 echo ""
 _cw_toolkit_info "installed to ${CW_ROOT}"
-_cw_toolkit_info "run: source ~/.bash_aliases  (or open a new shell)"
 _cw_toolkit_info "then: cw apps"
 _cw_toolkit_info "ongoing updates: cw update  (cw update --force to refresh all tools)"
-_cw_toolkit_info "reload shell: source ~/.bash_aliases  (or open a new shell)"
 
 "${CW_ROOT}/bin/cw" status
+_cw_shell_source_reminder

@@ -164,8 +164,8 @@ cw_update_cmd() {
   cw_doctor_sync "$force"
   cw_state_log "update completed (force=${force})"
   _cw_toolkit_info "update finished"
-  _cw_toolkit_info "reload shell helpers: source ~/.bash_aliases  (or open a new shell)"
   cw_status_cmd
+  _cw_shell_source_reminder
 }
 
 cw_update_help() {
@@ -217,6 +217,7 @@ cw_uninstall_cmd() {
   rm -rf "$CW_ROOT"
 
   _cw_toolkit_info "done"
+  _cw_shell_source_reminder
 }
 
 cw_uninstall_help() {

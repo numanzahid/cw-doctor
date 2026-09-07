@@ -83,6 +83,13 @@ _cw_toolkit_info() {
   echo "cw-doctor: $*"
 }
 
+_cw_shell_source_reminder() {
+  echo ""
+  _cw_toolkit_info "reload this shell session (copy the line below):"
+  echo ""
+  echo "source ~/.bash_aliases"
+}
+
 _cw_section() {
   echo ""
   echo "== $* =="

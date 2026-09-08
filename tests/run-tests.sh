@@ -98,12 +98,13 @@ else
   fail=1
 fi
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-printf '%s\n' "$ts" > "$(cw_state_tools_last_install_path)"
+mkdir -p "${CW_STATE_DIR}/tools-updated"
 name=""
 while IFS= read -r name; do
   [[ -z "$name" || "$name" =~ ^# ]] && continue
   printf '#!/bin/sh\n' > "$(cw_tools_shim_path "$name")"
   chmod +x "$(cw_tools_shim_path "$name")"
+  printf '%s\n' "$ts" > "$(cw_state_tool_last_update_path "$name")"
 done < "${CW_ROOT}/manifest/tools.list"
 if cw_tools_refresh_needed 0; then
   echo "FAIL: tools refresh should skip when fresh and present" >&2

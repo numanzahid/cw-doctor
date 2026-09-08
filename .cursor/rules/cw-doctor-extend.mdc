@@ -47,7 +47,7 @@ Tools and shims live under `$CW_ROOT`; removed by `cw uninstall` (`rm -rf $CW_RO
 - Preserves `.state/`, `runtime/`, `tools/` on reinstall
 - `install.sh` = first-time relocate + `cw_doctor_sync` (no git pull, no `--force`)
 - `cw update [--force]` = git pull + `cw_doctor_sync` (single maintenance command)
-- Bundled tools: skip re-download within 7 days unless `cw update --force`
+- Bundled tools: skip re-download per tool within 30 days unless `cw update --force`
 
 ## `bin/` and `shims/` layout
 
@@ -60,4 +60,4 @@ Tools and shims live under `$CW_ROOT`; removed by `cw uninstall` (`rm -rf $CW_RO
 
 - Bare `cw` / `cw menu` -> `cw_menu_cmd` in `lib/pick.sh`
 - Omit APP on most diagnostics -> fzf app picker (domain-labeled)
-- Shell: `config/shell.sh` + `config/functions.sh` (`cda`, `fcd`, `fnvim`, `fbat`, Ctrl+R via `fzf --bash`)
+- Shell: `config/shell.sh` + `config/functions.sh` (`cda`, `fcd`, `fe`, `fbat`, Ctrl+R via `fzf --bash`)

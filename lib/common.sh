@@ -21,7 +21,7 @@ CW_TRAFFIC_SAMPLE_LINES=20000
 CW_ERROR_SAMPLE_LINES=10000
 CW_PHP_SAMPLE_LINES=20000
 CW_BAT_PAGING=never
-CW_TOOLS_REFRESH_DAYS=7
+CW_TOOLS_REFRESH_DAYS=30
 
 # Print a file to stdout (no pager) for easy copy/paste in SSH sessions.
 _cw_view_file() {
@@ -220,7 +220,7 @@ Admin (install, paths, updates):
   cw path [APP]        Print app path (pick if APP omitted)
   cw uninstall         Remove install completely (from any directory)
 
-Shell navigation (after install): cda, cdapp, cdlogs, cgo, fcd, fnvim, fbat
+Shell navigation (after install): cda, cdapp, cdlogs, cgo, fcd, fe, fbat
   Ctrl+R               fzf fuzzy shell history
 
 Server diagnostics (shareable output; omit APP to pick interactively):

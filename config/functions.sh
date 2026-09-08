@@ -78,14 +78,25 @@ fcd() {
 }
 
 # Find a file under the current folder (or PATH) and open it in nvim.
-fnvim() {
-  local root="${1:-.}" fzf_bin fd_bin nvim_bin file target
+fe() {
+  local root="${1:-.}" fzf_bin fd_bin nvim_bin bat_bin file target preview_cmd preview_lines
+  preview_lines="${FE_PREVIEW_LINES:-80}"
   fzf_bin="$(_cw_shell_bin fzf)" || return 1
   fd_bin="$(_cw_shell_bin fd)" || return 1
   nvim_bin="$(_cw_shell_bin nvim)" || return 1
   root="$(cd "$root" && pwd)" || { echo "error: not a directory: ${1:-.}" >&2; return 1; }
-  file="$(cd "$root" && "$fd_bin" --type f --hidden --exclude .git \
-    --max-depth "${FNVIM_MAX_DEPTH:-20}" 2>/dev/null | "$fzf_bin" --prompt='fnvim> ')" || return 1
+  if bat_bin="$(_cw_shell_bin bat)"; then
+    preview_cmd="${bat_bin} --color=always --style=numbers --line-range :${preview_lines} -- {}"
+  else
+    preview_cmd="head -${preview_lines} {}"
+  fi
+  file="$(cd "$root" && "$fd_bin" --type f --hidden \
+    --exclude .git --exclude node_modules --exclude vendor \
+    --max-depth "${FE_MAX_DEPTH:-20}" 2>/dev/null | \
+    "$fzf_bin" --prompt='fe> ' \
+      --bind 'ctrl-/:toggle-preview' \
+      --preview "$preview_cmd" \
+      --preview-window 'right:55%:wrap:border')" || return 1
   [[ -n "$file" ]] || return 1
   if [[ "$file" == /* ]]; then
     target="$file"

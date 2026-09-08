@@ -39,18 +39,6 @@ cw_status_cmd() {
   done
 
   _cw_toolkit_section "bundled tools"
-  if last="$(cw_state_tools_last_install_read 2>/dev/null)"; then
-    local age="" ts_path
-    ts_path="$(cw_state_tools_last_install_path)"
-    age="$(cw_state_tools_age_days 2>/dev/null || true)"
-    if [[ -n "$age" ]]; then
-      _cw_toolkit_label "tools installed" "${last} (${age}d ago; ${ts_path})"
-    else
-      _cw_toolkit_label "tools installed" "${last} (${ts_path})"
-    fi
-  else
-    _cw_toolkit_label "tools installed" "never (run cw update --force)"
-  fi
   cw_tools_status
 
   if [[ -f "$CW_CRAWLERS_FILE" ]]; then
@@ -173,8 +161,8 @@ Usage: cw update [--force]
   Pull latest cw-doctor code (git), refresh shell integration and config,
   and install bundled tools (rg, fzf, bat, nvim, ...).
 
-  Tool downloads are skipped when all tools were installed within the last
-  ${CW_TOOLS_REFRESH_DAYS} days (timestamp: .state/tools-last-install).
+  Tool downloads are skipped per tool when it was updated within the last
+  ${CW_TOOLS_REFRESH_DAYS} days (timestamps: .state/tools-updated/<name>).
   Use --force to re-download them anyway.
 
   With --force, if the git working tree has local changes, you will be asked

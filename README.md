@@ -18,7 +18,7 @@ Install location: `~/.local/opt/cw-doctor` (clone directory is removed; no lefto
 
 **First time:** `./install.sh` then `source ~/.bash_aliases`
 
-**After that:** `cw update` (pull code, refresh config, install tools if older than 7 days)
+**After that:** `cw update` (pull code, refresh config, install tools if older than 30 days)
 
 **Refresh all tools:** `cw update --force`
 
@@ -81,7 +81,7 @@ Omit APP on most commands to get an fzf picker (domain-labeled). For `doctor`, `
 | `cdlogs` | cd to logs |
 | `cgo` | cd to path from `cw go` |
 | `fcd [DIR]` | fzf pick a subfolder under DIR (default `.`) and cd |
-| `fnvim [DIR]` | fzf pick a file under DIR (default `.`) and open in nvim |
+| `fe [DIR]` | fzf pick a file under DIR (default `.`) and open in nvim |
 | `fbat [DIR]` | fzf pick a file (bat preview in picker), then print with bat (no pager) |
 
 **Ctrl+R** uses fzf fuzzy history search (via `fzf --bash` in shell integration).

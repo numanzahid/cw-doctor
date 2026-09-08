@@ -206,51 +206,108 @@ cw_tools_install_nvim() {
   cw_state_record tool nvim "${version:-latest}"
 }
 
-cw_tools_all_present() {
-  local name list="${CW_ROOT}/manifest/tools.list"
-  [[ -f "$list" ]] || return 1
-  while IFS= read -r name; do
-    [[ -z "$name" || "$name" =~ ^# ]] && continue
-    [[ -x "$(cw_tools_shim_path "$name")" ]] || return 1
-  done < "$list"
-  return 0
-}
-
-# Return 0 when bundled binaries should be downloaded (missing, stale, or --force).
-cw_tools_refresh_needed() {
-  local force="${1:-0}"
+# Return 0 when one bundled binary should be downloaded (missing, stale, or --force).
+cw_tools_tool_refresh_needed() {
+  local name="$1" force="${2:-0}"
   [[ "$force" == 1 ]] && return 0
-  cw_tools_all_present || return 0
-  cw_state_tools_last_install_read >/dev/null || return 0
+  [[ -x "$(cw_tools_shim_path "$name")" ]] || return 0
+  cw_state_tool_last_update_read "$name" >/dev/null || return 0
   local age
-  age="$(cw_state_tools_age_days)" || return 0
+  age="$(cw_state_tool_age_days "$name")" || return 0
   [[ "$age" -ge "${CW_TOOLS_REFRESH_DAYS}" ]]
 }
 
+# Return 0 when any bundled binary should be downloaded (missing, stale, or --force).
+cw_tools_refresh_needed() {
+  local force="${1:-0}" name
+  [[ "$force" == 1 ]] && return 0
+  while IFS= read -r name; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    if cw_tools_tool_refresh_needed "$name" 0; then
+      return 0
+    fi
+  done < "${CW_ROOT}/manifest/tools.list"
+  return 1
+}
+
+cw_tools_migrate_legacy_timestamp() {
+  local legacy name last path
+  legacy="$(cw_state_tools_last_install_path)"
+  [[ -f "$legacy" ]] || return 0
+  last="$(tr -d '[:space:]' < "$legacy")"
+  [[ -n "$last" ]] || return 0
+  mkdir -p "${CW_STATE_DIR}/tools-updated"
+  while IFS= read -r name; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    path="$(cw_state_tool_last_update_path "$name")"
+    if [[ ! -f "$path" ]] && [[ -x "$(cw_tools_shim_path "$name")" ]]; then
+      printf '%s\n' "$last" > "$path"
+      chmod 600 "$path" 2>/dev/null || true
+    fi
+  done < "${CW_ROOT}/manifest/tools.list"
+  rm -f "$legacy"
+  cw_state_log "migrated legacy tools-last-install to per-tool timestamps"
+}
+
 cw_tools_install_all() {
-  local force="${1:-0}"
+  local force="${1:-0}" updated=0
   mkdir -p "$CW_TOOLS_DIR" "$CW_SHIMS_DIR" "$CW_BIN_DIR"
-  if ! cw_tools_refresh_needed "$force"; then
-    local last
-    last="$(cw_state_tools_last_install_read)"
-    _cw_toolkit_info "bundled tools fresh (last install ${last}); skipping download (use --force to refresh)"
-    return 0
+  cw_tools_migrate_legacy_timestamp
+
+  if cw_tools_tool_refresh_needed rg "$force"; then
+    cw_tools_install_github rg BurntSushi/ripgrep 'x86_64.*linux.*tar\.gz' rg
+    cw_state_tool_mark_updated rg
+    updated=1
   fi
-  cw_tools_install_github rg BurntSushi/ripgrep 'x86_64.*linux.*tar\.gz' rg
-  cw_tools_install_github fd sharkdp/fd 'x86_64.*linux.*tar\.gz' fd
-  cw_tools_install_github fzf junegunn/fzf 'linux_amd64\.tar\.gz' fzf
-  cw_tools_install_github bat sharkdp/bat 'x86_64.*linux.*tar\.gz' bat
-  cw_tools_install_github btop aristocratos/btop 'x86_64.*linux.*\.tar\.gz' btop
-  cw_tools_install_github gdu dundee/gdu 'gdu_linux_amd64.*\.tgz' gdu
-  cw_tools_install_github lazygit jesseduffield/lazygit 'linux_x86_64\.tar\.gz' lazygit
-  cw_tools_install_tmux
-  cw_tools_install_nvim
-  cw_state_tools_mark_installed
+  if cw_tools_tool_refresh_needed fd "$force"; then
+    cw_tools_install_github fd sharkdp/fd 'x86_64.*linux.*tar\.gz' fd
+    cw_state_tool_mark_updated fd
+    updated=1
+  fi
+  if cw_tools_tool_refresh_needed fzf "$force"; then
+    cw_tools_install_github fzf junegunn/fzf 'linux_amd64\.tar\.gz' fzf
+    cw_state_tool_mark_updated fzf
+    updated=1
+  fi
+  if cw_tools_tool_refresh_needed bat "$force"; then
+    cw_tools_install_github bat sharkdp/bat 'x86_64.*linux.*tar\.gz' bat
+    cw_state_tool_mark_updated bat
+    updated=1
+  fi
+  if cw_tools_tool_refresh_needed btop "$force"; then
+    cw_tools_install_github btop aristocratos/btop 'x86_64.*linux.*\.tar\.gz' btop
+    cw_state_tool_mark_updated btop
+    updated=1
+  fi
+  if cw_tools_tool_refresh_needed gdu "$force"; then
+    cw_tools_install_github gdu dundee/gdu 'gdu_linux_amd64.*\.tgz' gdu
+    cw_state_tool_mark_updated gdu
+    updated=1
+  fi
+  if cw_tools_tool_refresh_needed lazygit "$force"; then
+    cw_tools_install_github lazygit jesseduffield/lazygit 'linux_x86_64\.tar\.gz' lazygit
+    cw_state_tool_mark_updated lazygit
+    updated=1
+  fi
+  if cw_tools_tool_refresh_needed tmux "$force"; then
+    cw_tools_install_tmux
+    cw_state_tool_mark_updated tmux
+    updated=1
+  fi
+  if cw_tools_tool_refresh_needed nvim "$force"; then
+    cw_tools_install_nvim
+    cw_state_tool_mark_updated nvim
+    updated=1
+  fi
+
+  if [[ "$updated" -eq 0 ]]; then
+    _cw_toolkit_info "bundled tools fresh; skipping download (use --force to refresh)"
+  fi
 }
 
 cw_tools_check_one() {
   local name="$1"
-  local wrapper
+  local wrapper last age update_info=""
   wrapper="$(cw_tools_resolve_shim "$name")"
   if [[ -z "$wrapper" ]]; then
     echo "$name: MISSING"
@@ -262,7 +319,14 @@ cw_tools_check_one() {
     ver="$("$wrapper" -V 2>/dev/null || echo unknown)"
   fi
   [[ -z "$ver" ]] && ver=unknown
-  echo "$name: OK ($ver)"
+  if last="$(cw_state_tool_last_update_read "$name" 2>/dev/null)"; then
+    age="$(cw_state_tool_age_days "$name" 2>/dev/null || true)"
+    update_info="; updated ${last}"
+    [[ -n "$age" ]] && update_info="${update_info} (${age}d ago)"
+  else
+    update_info="; never updated via cw update"
+  fi
+  echo "$name: OK ($ver${update_info})"
 }
 
 cw_tools_status() {

@@ -19,7 +19,7 @@ Use helpers in `lib/state.sh` only. Never silently edit user files.
 | Managed block in `~/.bash_aliases` | `cw_state_ensure_managed_block` | `modify` + `backup` | Yes: strips `# >>> cw >>>` block |
 | `~/.local/bin/cw` link | `install.sh` | `local-bin-symlink` | Yes (+ hardcoded in uninstall) |
 | Download bundled tool | `cw_tools_install_*` | `tool` | No (`rm -rf $CW_ROOT` on uninstall) |
-| Bundled tools timestamp | `cw_state_tools_mark_installed` | (in `.state/`) | No (deleted with `$CW_ROOT`) |
+| Bundled tool update timestamp | `cw_state_tool_mark_updated` | (in `.state/tools-updated/`) | No (deleted with `$CW_ROOT`) |
 | Crawler list | `.state/crawlers.json` | (in `.state/`) | No (deleted with `$CW_ROOT`) |
 
 If you add a **new** mutation kind, you MUST:

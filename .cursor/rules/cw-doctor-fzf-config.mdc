@@ -38,7 +38,7 @@ Installed via managed block in `~/.bash_aliases` -> `config/shell.sh`:
 | File | Role |
 |------|------|
 | `config/shell.sh` | PATH (`$CW_ROOT/bin`), `fzf --bash` (Ctrl+R), sources aliases + functions + completions |
-| `config/functions.sh` | `cda`, `cdapp`, `cdlogs`, `cgo`, `fcd`, `fnvim`, `fbat` |
+| `config/functions.sh` | `cda`, `cdapp`, `cdlogs`, `cgo`, `fcd`, `fe`, `fbat` |
 | `config/aliases.sh` | Optional short aliases |
 | `config/inputrc` | Optional readline tweaks |
 | `config/tmux.conf` | Optional tmux config reference |
@@ -46,7 +46,7 @@ Installed via managed block in `~/.bash_aliases` -> `config/shell.sh`:
 Shell helpers use `_CW_SHELL_ROOT` (`~/.local/opt/cw-doctor`) and `_cw_shell_bin` (bundled tool, else PATH).
 
 - `cda` / `cdapp` / `cdlogs` -> `cw path` (with `--pick`, `--app`, `--logs`)
-- `fcd` / `fnvim` / `fbat` -> `fd` + `fzf` (+ `bat` preview in `fbat` picker only)
+- `fcd` / `fe` / `fbat` -> `fd` + `fzf` (+ `bat` preview in `fe` and `fbat` pickers)
 - File output: `bin/cw-view` / `_cw_view_file` (`bat --no-config --paging=never --pager=cat | cat`) for `cw logs`, `cw reports --open`, `fbat`
 - Tab completion: `completions/cw.bash` (`cw apps --completion` for domains)
 

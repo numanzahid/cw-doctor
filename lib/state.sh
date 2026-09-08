@@ -9,8 +9,13 @@ cw_state_tools_last_install_path() {
   printf '%s/tools-last-install' "$CW_STATE_DIR"
 }
 
+cw_state_tool_last_update_path() {
+  local name="$1"
+  printf '%s/tools-updated/%s' "$CW_STATE_DIR" "$name"
+}
+
 cw_state_init() {
-  mkdir -p "${CW_STATE_DIR}" "${CW_STATE_DIR}/backups" "${CW_STATE_DIR}/reports"
+  mkdir -p "${CW_STATE_DIR}" "${CW_STATE_DIR}/backups" "${CW_STATE_DIR}/reports" "${CW_STATE_DIR}/tools-updated"
   chmod 700 "${CW_STATE_DIR}" 2>/dev/null || true
   if [[ ! -f "$CW_STATE_FILE" ]]; then
     : > "$CW_STATE_FILE"
@@ -55,19 +60,27 @@ cw_state_tools_last_install_read() {
   tr -d '[:space:]' < "$path"
 }
 
-cw_state_tools_mark_installed() {
-  local ts path
-  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+cw_state_tool_last_update_read() {
+  local name="$1" path
   cw_state_init
-  path="$(cw_state_tools_last_install_path)"
-  printf '%s\n' "$ts" > "$path"
-  chmod 600 "$path" 2>/dev/null || true
-  cw_state_log "bundled tools installed ${ts}"
+  path="$(cw_state_tool_last_update_path "$name")"
+  [[ -f "$path" ]] || return 1
+  tr -d '[:space:]' < "$path"
 }
 
-cw_state_tools_age_days() {
-  local last now ts age_secs
-  last="$(cw_state_tools_last_install_read)" || return 1
+cw_state_tool_mark_updated() {
+  local name="$1" ts path
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  cw_state_init
+  path="$(cw_state_tool_last_update_path "$name")"
+  printf '%s\n' "$ts" > "$path"
+  chmod 600 "$path" 2>/dev/null || true
+  cw_state_log "tool updated ${name} ${ts}"
+}
+
+cw_state_tool_age_days() {
+  local name="$1" last now ts age_secs
+  last="$(cw_state_tool_last_update_read "$name")" || return 1
   if ! ts="$(date -u -d "$last" +%s 2>/dev/null)"; then
     return 1
   fi
@@ -77,6 +90,31 @@ cw_state_tools_age_days() {
     return 1
   fi
   printf '%s' "$(( age_secs / 86400 ))"
+}
+
+# Legacy single-file timestamp (pre per-tool tracking). Prefer cw_state_tool_*.
+cw_state_tools_mark_installed() {
+  local name list="${CW_ROOT}/manifest/tools.list"
+  cw_state_init
+  [[ -f "$list" ]] || return 0
+  while IFS= read -r name; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    cw_state_tool_mark_updated "$name"
+  done < "$list"
+}
+
+cw_state_tools_age_days() {
+  local name min_age="" age list="${CW_ROOT}/manifest/tools.list"
+  [[ -f "$list" ]] || return 1
+  while IFS= read -r name; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    age="$(cw_state_tool_age_days "$name" 2>/dev/null)" || continue
+    if [[ -z "$min_age" || "$age" -lt "$min_age" ]]; then
+      min_age="$age"
+    fi
+  done < "$list"
+  [[ -n "$min_age" ]] || return 1
+  printf '%s' "$min_age"
 }
 
 cw_state_backup_file() {

@@ -134,6 +134,31 @@ else
   fail=1
 fi
 mkdir -p "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime"
+nvim_ver="$(_cw_version_from_release_url 'https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz')"
+if [[ "$nvim_ver" == "0.12.5" ]]; then
+  echo "PASS: nvim version parsed from release URL"
+else
+  echo "FAIL: nvim version parsed from release URL (got $nvim_ver)" >&2
+  fail=1
+fi
+printf '#!/usr/bin/env bash\nexec true\n' > "$(cw_tools_shim_path nvim)"
+chmod +x "$(cw_tools_shim_path nvim)"
+if cw_tools_nvim_shim_ok; then
+  echo "FAIL: legacy nvim shim should be detected" >&2
+  fail=1
+elif cw_tools_tool_refresh_needed nvim 0; then
+  echo "PASS: nvim refresh needed when shim missing VIMRUNTIME"
+else
+  echo "FAIL: nvim refresh needed when shim missing VIMRUNTIME" >&2
+  fail=1
+fi
+cw_tools_write_nvim_wrapper "${CW_TOOLS_DIR}/nvim/test"
+if cw_tools_nvim_shim_ok; then
+  echo "PASS: nvim shim rewritten with runtime exports"
+else
+  echo "FAIL: nvim shim rewritten with runtime exports" >&2
+  fail=1
+fi
 if cw_tools_refresh_needed 1; then
   echo "PASS: tools refresh forced"
 else

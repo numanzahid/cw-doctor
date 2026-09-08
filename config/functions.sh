@@ -20,6 +20,33 @@ _cw_shell_bin() {
   return 1
 }
 
+# fzf in command substitution: UI on /dev/tty (see lib/pick.sh cw_pick_run_fzf).
+_cw_shell_run_fzf() {
+  local fzf_bin="$1"
+  shift
+  if [[ -t 1 ]]; then
+    "$fzf_bin" "$@"
+  else
+    "$fzf_bin" "$@" 2>/dev/tty
+  fi
+}
+
+# Launch bundled nvim after fzf or from fe (restore TTY; skip heavy user config by default).
+_cw_shell_run_nvim() {
+  local nvim_bin="$1"
+  shift
+  local args=()
+  if [[ -z "${CW_NEOVIM_FULL:-}${FE_FULL:-}" ]]; then
+    args+=(--clean)
+  fi
+  if [[ -r /dev/tty ]]; then
+    stty sane 2>/dev/null </dev/tty || true
+    "$nvim_bin" "${args[@]}" "$@" </dev/tty >/dev/tty
+  else
+    "$nvim_bin" "${args[@]}" "$@"
+  fi
+}
+
 _cda_go() {
   local dest
   dest="$(cw path "$@")" || return 1
@@ -71,7 +98,7 @@ fcd() {
   fd_bin="$(_cw_shell_bin fd)" || return 1
   root="$(cd "$root" && pwd)" || { echo "error: not a directory: ${1:-.}" >&2; return 1; }
   dir="$(cd "$root" && "$fd_bin" --type d --hidden --exclude .git \
-    --max-depth "${FCD_MAX_DEPTH:-20}" 2>/dev/null | "$fzf_bin" --prompt='fcd> ')" || return 1
+    --max-depth "${FCD_MAX_DEPTH:-20}" 2>/dev/null | _cw_shell_run_fzf "$fzf_bin" --prompt='fcd> ')" || return 1
   [[ -n "$dir" ]] || return 1
   abs="$(cd "$root" && cd "$dir" && pwd)" || { echo "error: not a directory: $dir" >&2; return 1; }
   cd "$abs" || return 1
@@ -93,7 +120,7 @@ fe() {
   file="$(cd "$root" && "$fd_bin" --type f --hidden \
     --exclude .git --exclude node_modules --exclude vendor \
     --max-depth "${FE_MAX_DEPTH:-20}" 2>/dev/null | \
-    "$fzf_bin" --prompt='fe> ' \
+    _cw_shell_run_fzf "$fzf_bin" --prompt='fe> ' \
       --bind 'ctrl-/:toggle-preview' \
       --preview "$preview_cmd" \
       --preview-window 'right:55%:wrap:border')" || return 1
@@ -104,7 +131,7 @@ fe() {
     target="${root}/${file#./}"
   fi
   [[ -f "$target" ]] || { echo "error: not a file: $target" >&2; return 1; }
-  "$nvim_bin" "$target"
+  _cw_shell_run_nvim "$nvim_bin" "$target"
 }
 
 # Find a file under the current folder (or PATH), preview with bat in fzf, then view.
@@ -118,7 +145,7 @@ fbat() {
   file="$(cd "$root" && "$fd_bin" --type f --hidden \
     --exclude .git --exclude node_modules --exclude vendor \
     --max-depth "${FBAT_MAX_DEPTH:-20}" 2>/dev/null | \
-    "$fzf_bin" --prompt='fbat> ' \
+    _cw_shell_run_fzf "$fzf_bin" --prompt='fbat> ' \
       --bind 'ctrl-/:toggle-preview' \
       --preview "${bat_bin} --color=always --style=numbers --line-range :${preview_lines} -- {}" \
       --preview-window 'right:55%:wrap:border')" || return 1

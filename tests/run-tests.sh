@@ -105,12 +105,14 @@ while IFS= read -r name; do
   printf '#!/bin/sh\n' > "$(cw_tools_shim_path "$name")"
   chmod +x "$(cw_tools_shim_path "$name")"
   if [[ "$name" == nvim ]]; then
-    mkdir -p "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime"
+    mkdir -p "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime/syntax"
+    printf 'syntax on\n' > "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime/syntax/syntax.vim"
     printf '#!/bin/sh\n' > "${CW_TOOLS_DIR}/nvim/test/nvim"
     chmod +x "${CW_TOOLS_DIR}/nvim/test/nvim"
   fi
   printf '%s\n' "$ts" > "$(cw_state_tool_last_update_path "$name")"
 done < "${CW_ROOT}/manifest/tools.list"
+cw_tools_write_nvim_wrapper "${CW_TOOLS_DIR}/nvim/test"
 if cw_tools_refresh_needed 0; then
   echo "FAIL: tools refresh should skip when fresh and present" >&2
   fail=1
@@ -133,7 +135,8 @@ else
   echo "FAIL: nvim refresh needed when runtime missing" >&2
   fail=1
 fi
-mkdir -p "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime"
+mkdir -p "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime/syntax"
+printf 'syntax on\n' > "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime/syntax/syntax.vim"
 nvim_ver="$(_cw_version_from_release_url 'https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz')"
 if [[ "$nvim_ver" == "0.12.5" ]]; then
   echo "PASS: nvim version parsed from release URL"

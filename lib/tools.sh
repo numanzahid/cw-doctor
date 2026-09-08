@@ -103,7 +103,11 @@ cw_tools_nvim_best_ver_dir() {
 cw_tools_nvim_shim_ok() {
   local shim
   shim="$(cw_tools_shim_path nvim)"
-  [[ -f "$shim" ]] && grep -q 'VIMRUNTIME=' "$shim" 2>/dev/null && grep -q 'NVIM_NOTTYFAST=1' "$shim" 2>/dev/null
+  [[ -f "$shim" ]] && grep -q 'VIMRUNTIME=' "$shim" 2>/dev/null \
+    && grep -q 'NVIM_NOTTYFAST=1' "$shim" 2>/dev/null \
+    && grep -q 'XDG_CONFIG_HOME=' "$shim" 2>/dev/null \
+    && grep -q 'syntax/syntax.vim' "$shim" 2>/dev/null \
+    && grep -q '_use_clean=1' "$shim" 2>/dev/null
 }
 
 cw_tools_install_github() {
@@ -223,40 +227,79 @@ EOF
 
 cw_tools_write_nvim_wrapper() {
   local ver_dir="$1"
-  local nvim_bin shim runtime
+  local nvim_bin shim runtime vimruntime
   nvim_bin="$(_cw_find_binary "$ver_dir" nvim)"
   [[ -n "$nvim_bin" ]] || _cw_toolkit_die "nvim binary missing under ${ver_dir}"
   nvim_bin="$(cd "$(dirname "$nvim_bin")" && pwd)/$(basename "$nvim_bin")"
-  [[ -d "${ver_dir}/share/nvim/runtime" ]] || _cw_toolkit_die "nvim runtime missing under ${ver_dir} (run cw update --force)"
+  vimruntime="${ver_dir}/share/nvim/runtime"
+  [[ -d "$vimruntime" ]] || _cw_toolkit_die "nvim runtime missing under ${ver_dir} (run cw update --force)"
+  [[ -f "${vimruntime}/syntax/syntax.vim" ]] || _cw_toolkit_die "nvim runtime incomplete under ${ver_dir}"
+  vimruntime="$(cd "$vimruntime" && pwd)"
   runtime="${CW_ROOT}/runtime/nvim"
   shim="$(cw_tools_shim_path nvim)"
-  mkdir -p "${runtime}/data" "${runtime}/state" "${runtime}/cache" "$CW_SHIMS_DIR"
+  mkdir -p "${runtime}/data" "${runtime}/state" "${runtime}/cache" "${runtime}/config/nvim" "$CW_SHIMS_DIR"
+  if [[ ! -f "${runtime}/config/nvim/init.lua" ]]; then
+    cat > "${runtime}/config/nvim/init.lua" <<'EOF'
+-- cw-doctor bundled nvim (minimal). Set CW_NEOVIM_FULL=1 to use ~/.config/nvim.
+vim.opt.number = true
+vim.opt.mouse = ""
+EOF
+  fi
   cat > "$shim" <<EOF
 #!/usr/bin/env bash
 NVIM_BIN="${nvim_bin}"
-_cw_nvim_runtime() {
-  local dir="\$1" root="\$dir"
-  while [[ "\$root" != "/" ]]; do
-    if [[ -d "\${root}/share/nvim/runtime" ]]; then
-      printf '%s' "\${root}/share/nvim/runtime"
-      return 0
-    fi
-    root="\$(dirname "\$root")"
-  done
-  return 1
-}
-_vimruntime="\$(_cw_nvim_runtime "\$(dirname "\$NVIM_BIN")")" || {
-  echo "cw-doctor: nvim runtime not found (run: cw update --force)" >&2
+VIMRUNTIME="${vimruntime}"
+export NVIM_NOTTYFAST=1
+case "\${1-}" in
+  --version|-V|--help|-h)
+    exec "\$NVIM_BIN" "\$@"
+    ;;
+esac
+[[ -f "\$VIMRUNTIME/syntax/syntax.vim" ]] || {
+  echo "cw-doctor: nvim runtime missing at \$VIMRUNTIME" >&2
+  echo "cw-doctor: run: cw update --force" >&2
   exit 1
 }
-export VIMRUNTIME="\$_vimruntime"
+export VIMRUNTIME
 export XDG_DATA_HOME="${runtime}/data"
 export XDG_STATE_HOME="${runtime}/state"
 export XDG_CACHE_HOME="${runtime}/cache"
-export NVIM_NOTTYFAST=1
-exec "\$NVIM_BIN" "\$@"
+if [[ -z "\${CW_NEOVIM_FULL:-}" ]]; then
+  export XDG_CONFIG_HOME="${runtime}/config"
+fi
+_args=("\$@")
+if [[ -z "\${CW_NEOVIM_FULL:-}" ]]; then
+  _use_clean=1
+  for _a in "\${_args[@]}"; do
+    case "\$_a" in
+      --clean|-u|--noplugin|--headless|-es|-Es|-V|--version|--help|-h)
+        _use_clean=0
+        break
+        ;;
+    esac
+  done
+  [[ "\$_use_clean" == 1 ]] && _args=(--clean "\${_args[@]}")
+fi
+if [[ -r /dev/tty ]] && [[ ! -t 0 ]]; then
+  exec "\$NVIM_BIN" "\${_args[@]}" </dev/tty >/dev/tty
+fi
+exec "\$NVIM_BIN" "\${_args[@]}"
 EOF
   chmod +x "$shim"
+}
+
+cw_tools_nvim_version() {
+  local ver_dir nvim_bin vimruntime ver
+  ver_dir="$(cw_tools_nvim_best_ver_dir)" || return 1
+  nvim_bin="$(_cw_find_binary "$ver_dir" nvim)"
+  [[ -n "$nvim_bin" ]] || return 1
+  vimruntime="${ver_dir}/share/nvim/runtime"
+  if command -v timeout >/dev/null 2>&1; then
+    ver="$(timeout 5 env NVIM_NOTTYFAST=1 VIMRUNTIME="$vimruntime" "$nvim_bin" --version 2>/dev/null | head -1)"
+  else
+    ver="$(env NVIM_NOTTYFAST=1 VIMRUNTIME="$vimruntime" "$nvim_bin" --version 2>/dev/null | head -1)"
+  fi
+  [[ -n "$ver" ]] && printf '%s' "$ver"
 }
 
 cw_tools_install_nvim() {
@@ -399,16 +442,25 @@ cw_tools_install_all() {
 
 cw_tools_check_one() {
   local name="$1"
-  local wrapper last age update_info=""
+  local wrapper last age update_info="" ver
   wrapper="$(cw_tools_resolve_shim "$name")"
   if [[ -z "$wrapper" ]]; then
     echo "$name: MISSING"
     return 1
   fi
-  local ver
-  ver="$("$wrapper" --version 2>/dev/null | head -1 | sed 's/\x1b\[[0-9;]*m//g' || true)"
+  if [[ "$name" == nvim ]]; then
+    ver="$(cw_tools_nvim_version 2>/dev/null || true)"
+  elif command -v timeout >/dev/null 2>&1; then
+    ver="$(timeout 5 "$wrapper" --version 2>/dev/null | head -1 | sed 's/\x1b\[[0-9;]*m//g' || true)"
+  else
+    ver="$("$wrapper" --version 2>/dev/null | head -1 | sed 's/\x1b\[[0-9;]*m//g' || true)"
+  fi
   if [[ -z "$ver" && "$name" == tmux ]]; then
-    ver="$("$wrapper" -V 2>/dev/null || echo unknown)"
+    if command -v timeout >/dev/null 2>&1; then
+      ver="$(timeout 5 "$wrapper" -V 2>/dev/null || echo unknown)"
+    else
+      ver="$("$wrapper" -V 2>/dev/null || echo unknown)"
+    fi
   fi
   [[ -z "$ver" ]] && ver=unknown
   if last="$(cw_state_tool_last_update_read "$name" 2>/dev/null)"; then

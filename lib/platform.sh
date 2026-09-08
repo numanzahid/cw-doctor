@@ -87,3 +87,15 @@ cw_platform_preflight() {
   command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 || _cw_toolkit_die "curl or wget required"
   mkdir -p "${HOME}/.local" || _cw_toolkit_die "cannot create ~/.local"
 }
+
+# Cloudways app roots live under ~/applications/<id>. Refuse install elsewhere unless overridden.
+cw_platform_require_cloudways() {
+  if cw_platform_applications_dir >/dev/null 2>&1; then
+    return 0
+  fi
+  if [[ "${CW_DOCTOR_ALLOW_INSTALL:-}" == 1 ]]; then
+    _cw_toolkit_warn "non-Cloudways host (dev/test install only)"
+    return 0
+  fi
+  _cw_toolkit_die "Cloudways applications directory not found (~/applications). cw-doctor is for Cloudways SSH only. To install on another host for development, set CW_DOCTOR_ALLOW_INSTALL=1"
+}

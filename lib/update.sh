@@ -175,8 +175,8 @@ EOF
 cw_uninstall_cmd() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --purge)
-        _cw_toolkit_warn "--purge is no longer used; cw uninstall always removes the install directory"
+      --purge|--force)
+        # Legacy aliases; uninstall always removes the full install directory.
         shift
         ;;
       -h|--help)
@@ -208,10 +208,12 @@ cw_uninstall_cmd() {
 
 cw_uninstall_help() {
   cat <<EOF
-Usage: cw uninstall
+Usage: cw uninstall [--force]
 
   Remove shell integration and delete the install directory (${CW_ROOT:-~/.local/opt/cw-doctor}).
   Works from any directory while cw is on PATH.
+
+  --force and --purge are accepted for compatibility (same behavior; full remove).
 
   Re-install: git clone the repo and run ./install.sh
 EOF

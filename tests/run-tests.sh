@@ -50,6 +50,7 @@ TMP_HOME="$(mktemp -d)"
 APP_DIR="${TMP_HOME}/applications/testapp123456"
 mkdir -p "${APP_DIR}/conf" "${APP_DIR}/public_html" "${APP_DIR}/logs"
 printf 'server_name example.com www.example.com;\n' > "${APP_DIR}/conf/server.nginx"
+SAVED_HOME="$HOME"
 export HOME="$TMP_HOME"
 path_web="$(cw_path_cmd example.com)"
 path_logs="$(cw_path_cmd www.example.com --logs)"
@@ -60,7 +61,7 @@ else
   fail=1
 fi
 rm -rf "$TMP_HOME"
-unset HOME
+export HOME="$SAVED_HOME"
 export CW_ROOT="$ROOT"
 
 LOGDIR="${ROOT}/tests/fixtures/log-rotate-case"
@@ -196,6 +197,17 @@ else
   fail=1
 fi
 rm -rf "$GIT_TEST_DIR"
+
+LINK_BIN="$(mktemp -d)/bin"
+mkdir -p "$LINK_BIN"
+ln -sf "${ROOT}/bin/cw" "${LINK_BIN}/cw"
+if "${LINK_BIN}/cw" help >/dev/null 2>&1; then
+  echo "PASS: cw works when invoked via symlink"
+else
+  echo "FAIL: cw works when invoked via symlink" >&2
+  fail=1
+fi
+rm -rf "$(dirname "$LINK_BIN")"
 
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck "${ROOT}"/lib/*.sh "${ROOT}"/bin/cw "${ROOT}"/install.sh "${ROOT}"/uninstall.sh && echo "PASS: shellcheck" || fail=1

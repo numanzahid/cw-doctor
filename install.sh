@@ -204,6 +204,7 @@ done
 cw_state_acquire_lock
 trap cw_state_release_lock EXIT
 
+cw_platform_require_cloudways
 cw_state_log "install started in ${CW_ROOT}"
 cw_doctor_sync 0
 cw_state_log "install finished"

@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 # cw-doctor common helpers
 
+# Resolve install root when entrypoint is a symlink (e.g. ~/.local/bin/cw -> .../bin/cw).
+_cw_resolve_script_path() {
+  local script="$1"
+  if command -v readlink >/dev/null 2>&1; then
+    script="$(readlink -f "$script" 2>/dev/null || echo "$script")"
+  fi
+  printf '%s' "$script"
+}
+
 if [[ -z "${CW_ROOT:-}" ]]; then
-  CW_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  _cw_self="$(_cw_resolve_script_path "${BASH_SOURCE[0]}")"
+  CW_ROOT="$(cd "$(dirname "$_cw_self")/.." && pwd)"
 fi
 
 CW_STATE_DIR="${CW_ROOT}/.state"

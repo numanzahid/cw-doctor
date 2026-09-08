@@ -2,7 +2,11 @@
 # Print a file with bat highlighting, never through a pager (SSH copy/paste friendly).
 set -euo pipefail
 
-CW_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+_cw_self="${BASH_SOURCE[0]}"
+if command -v readlink >/dev/null 2>&1; then
+  _cw_self="$(readlink -f "$_cw_self" 2>/dev/null || echo "$_cw_self")"
+fi
+CW_ROOT="$(cd "$(dirname "$_cw_self")/.." && pwd)"
 # shellcheck source=lib/common.sh
 source "${CW_ROOT}/lib/common.sh"
 

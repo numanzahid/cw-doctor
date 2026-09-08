@@ -48,6 +48,32 @@ _cw_find_binary() {
   [[ -n "$found" ]] && printf '%s' "$found"
 }
 
+# Neovim release archives ship bin/nvim and share/nvim/runtime as siblings.
+_cw_nvim_package_root() {
+  local extract="$1" binary dir
+  binary="$(_cw_find_binary "$extract" nvim)"
+  [[ -n "$binary" ]] || return 1
+  dir="$(dirname "$binary")"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "${dir}/share/nvim/runtime" ]]; then
+      printf '%s' "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  return 1
+}
+
+cw_tools_nvim_install_ok() {
+  local ver_dir
+  for ver_dir in "${CW_TOOLS_DIR}/nvim/"*; do
+    [[ -d "$ver_dir" ]] || continue
+    [[ -n "$(_cw_find_binary "$ver_dir" nvim)" ]] || continue
+    [[ -d "${ver_dir}/share/nvim/runtime" ]] && return 0
+  done
+  return 1
+}
+
 cw_tools_install_github() {
   local name="$1" repo="$2" pattern="$3" bin_name="${4:-$1}"
   local tmp="${CW_TOOLS_DIR}/${name}/.installing-$$"
@@ -165,16 +191,22 @@ EOF
 
 cw_tools_write_nvim_wrapper() {
   local ver_dir="$1"
-  local nvim_bin shim runtime
+  local nvim_bin shim runtime vimruntime
   nvim_bin="$(_cw_find_binary "$ver_dir" nvim)"
+  [[ -n "$nvim_bin" ]] || _cw_toolkit_die "nvim binary missing under ${ver_dir}"
+  vimruntime="${ver_dir}/share/nvim/runtime"
+  [[ -d "$vimruntime" ]] || _cw_toolkit_die "nvim runtime missing under ${ver_dir} (run cw update --force)"
   runtime="${CW_ROOT}/runtime/nvim"
   shim="$(cw_tools_shim_path nvim)"
   mkdir -p "${runtime}/data" "${runtime}/state" "${runtime}/cache" "$CW_SHIMS_DIR"
   cat > "$shim" <<EOF
 #!/usr/bin/env bash
+export VIMRUNTIME="${vimruntime}"
 export XDG_DATA_HOME="${runtime}/data"
 export XDG_STATE_HOME="${runtime}/state"
 export XDG_CACHE_HOME="${runtime}/cache"
+# SSH / high-latency terminals often miss DSR during startup (E1568).
+export NVIM_NOTTYFAST=1
 exec "${nvim_bin}" "\$@"
 EOF
   chmod +x "$shim"
@@ -182,7 +214,7 @@ EOF
 
 cw_tools_install_nvim() {
   local tmp="${CW_TOOLS_DIR}/nvim/.installing-$$"
-  local url ver_dir version archive binary
+  local url ver_dir version archive binary pkg_root
 
   rm -rf "$tmp"
   mkdir -p "$tmp"
@@ -195,12 +227,14 @@ cw_tools_install_nvim() {
   _cw_extract_archive "$archive" "${tmp}/extract"
   binary="$(_cw_find_binary "${tmp}/extract" nvim)"
   [[ -n "$binary" ]] || _cw_toolkit_die "nvim binary not found"
+  pkg_root="$(_cw_nvim_package_root "${tmp}/extract")"
+  [[ -n "$pkg_root" ]] || _cw_toolkit_die "nvim runtime not found in release archive"
 
   version="$(basename "$url" | sed -E 's/[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/')"
   ver_dir="${CW_TOOLS_DIR}/nvim/${version:-latest}"
   rm -rf "$ver_dir"
   mkdir -p "$ver_dir"
-  cp -a "$(dirname "$binary")"/. "$ver_dir/"
+  cp -a "${pkg_root}/." "$ver_dir/"
   rm -rf "$tmp"
   cw_tools_write_nvim_wrapper "$ver_dir"
   cw_state_record tool nvim "${version:-latest}"
@@ -210,6 +244,9 @@ cw_tools_install_nvim() {
 cw_tools_tool_refresh_needed() {
   local name="$1" force="${2:-0}"
   [[ "$force" == 1 ]] && return 0
+  if [[ "$name" == nvim ]] && [[ -x "$(cw_tools_shim_path "$name")" ]] && ! cw_tools_nvim_install_ok; then
+    return 0
+  fi
   [[ -x "$(cw_tools_shim_path "$name")" ]] || return 0
   cw_state_tool_last_update_read "$name" >/dev/null || return 0
   local age

@@ -104,6 +104,11 @@ while IFS= read -r name; do
   [[ -z "$name" || "$name" =~ ^# ]] && continue
   printf '#!/bin/sh\n' > "$(cw_tools_shim_path "$name")"
   chmod +x "$(cw_tools_shim_path "$name")"
+  if [[ "$name" == nvim ]]; then
+    mkdir -p "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime"
+    printf '#!/bin/sh\n' > "${CW_TOOLS_DIR}/nvim/test/nvim"
+    chmod +x "${CW_TOOLS_DIR}/nvim/test/nvim"
+  fi
   printf '%s\n' "$ts" > "$(cw_state_tool_last_update_path "$name")"
 done < "${CW_ROOT}/manifest/tools.list"
 if cw_tools_refresh_needed 0; then
@@ -112,6 +117,23 @@ if cw_tools_refresh_needed 0; then
 else
   echo "PASS: tools refresh skips when fresh and present"
 fi
+if cw_tools_nvim_install_ok; then
+  echo "PASS: nvim install ok when runtime present"
+else
+  echo "FAIL: nvim install ok when runtime present" >&2
+  fail=1
+fi
+rm -rf "${CW_TOOLS_DIR}/nvim/test/share"
+if cw_tools_nvim_install_ok; then
+  echo "FAIL: nvim install should be broken without runtime" >&2
+  fail=1
+elif cw_tools_tool_refresh_needed nvim 0; then
+  echo "PASS: nvim refresh needed when runtime missing"
+else
+  echo "FAIL: nvim refresh needed when runtime missing" >&2
+  fail=1
+fi
+mkdir -p "${CW_TOOLS_DIR}/nvim/test/share/nvim/runtime"
 if cw_tools_refresh_needed 1; then
   echo "PASS: tools refresh forced"
 else
